@@ -381,9 +381,8 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 		fs.rmSync(vscodeUriTarget, { recursive: true, force: true });
 		copyDirectoryRecursiveSync(erdosUriSource, vscodeUriTarget);
 
-		// Bundle standalone Quarto CLI for this platform
-		const platformArch = arch === 'armhf' ? 'arm64' : arch;
-		const quartoStandalonePath = path.join(root, 'quarto', `${platform}-${platformArch}`);
+		// Bundle standalone Quarto CLI (downloaded for current platform)
+		const quartoStandalonePath = path.join(root, 'quarto');
 		
 		let quartoStandalone;
 		if (fs.existsSync(quartoStandalonePath)) {

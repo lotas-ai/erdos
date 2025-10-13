@@ -1,6 +1,6 @@
 /**
- * Downloads and extracts Quarto CLI binaries for bundling with Erdos
- * This creates the standalone CLI that the extension will call
+ * Downloads and extracts Quarto CLI for the CURRENT platform only
+ * Based on the original extensions/quarto/build/download-quarto.js approach
  */
 
 const fs = require('fs');
@@ -10,7 +10,10 @@ const { execSync } = require('child_process');
 
 const QUARTO_VERSION = '1.7.32';
 
-function getQuartoDownloadUrl(platform, arch) {
+function getQuartoDownloadUrl() {
+    const platform = process.platform;
+    const arch = process.arch;
+    
     let filename;
     if (platform === 'win32') {
         filename = `quarto-${QUARTO_VERSION}-win.zip`;
@@ -31,7 +34,6 @@ function downloadFile(url, dest) {
         console.log(`Downloading Quarto CLI from: ${url}`);
 
         const request = https.get(url, (response) => {
-            // Handle redirects (3xx)
             if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
                 const redirectUrl = response.headers.location;
                 response.destroy();
@@ -81,23 +83,23 @@ function downloadFile(url, dest) {
     });
 }
 
-function extractArchive(archivePath, extractDir, platform) {
+function extractArchive(archivePath, extractDir) {
     console.log(`Extracting: ${archivePath} to ${extractDir}`);
     
+    const platform = process.platform;
+    
     if (platform === 'win32') {
-        // Use PowerShell to extract ZIP on Windows
         execSync(`powershell -command "Expand-Archive -Path '${archivePath}' -DestinationPath '${extractDir}' -Force"`, { stdio: 'inherit' });
     } else {
-        // Use tar for macOS and Linux
         execSync(`tar -xzf "${archivePath}" -C "${extractDir}"`, { stdio: 'inherit' });
     }
     
     console.log('Extraction complete');
 }
 
-function setExecutablePermissions(binDir, platform) {
-    if (platform === 'win32') {
-        return; // Windows doesn't need executable permissions
+function setExecutablePermissions(binDir) {
+    if (process.platform === 'win32') {
+        return;
     }
     
     console.log('Setting executable permissions...');
@@ -128,89 +130,66 @@ function setExecutablePermissions(binDir, platform) {
     makeExecutableRecursive(binDir);
 }
 
-async function downloadForPlatform(platform, arch, rootDir) {
-    const downloadDir = path.join(rootDir, 'temp');
-    const outputDir = path.join(rootDir, 'quarto', `${platform}-${arch}`);
-    
-    // Create directories
-    if (!fs.existsSync(downloadDir)) {
-        fs.mkdirSync(downloadDir, { recursive: true });
-    }
-    
-    if (fs.existsSync(outputDir)) {
-        fs.rmSync(outputDir, { recursive: true, force: true });
-    }
-    fs.mkdirSync(outputDir, { recursive: true });
-    
-    // Download Quarto CLI
-    const downloadUrl = getQuartoDownloadUrl(platform, arch);
-    const filename = path.basename(downloadUrl);
-    const archivePath = path.join(downloadDir, filename);
-    
-    await downloadFile(downloadUrl, archivePath);
-    
-    // Extract archive
-    extractArchive(archivePath, outputDir, platform);
-    
-    // The archive extracts into a versioned folder; flatten it
-    const extractedDirs = fs.readdirSync(outputDir).filter(item =>
-        fs.statSync(path.join(outputDir, item)).isDirectory() && item.startsWith('quarto-')
-    );
-
-    if (extractedDirs.length === 1) {
-        const extractedDir = path.join(outputDir, extractedDirs[0]);
-        const tempDir = path.join(outputDir, 'temp-move');
-
-        fs.renameSync(extractedDir, tempDir);
-        const contents = fs.readdirSync(tempDir);
-        for (const item of contents) {
-            const srcPath = path.join(tempDir, item);
-            const destPath = path.join(outputDir, item);
-            if (fs.existsSync(destPath)) {
-                fs.rmSync(destPath, { recursive: true, force: true });
-            }
-            fs.renameSync(srcPath, destPath);
-        }
-        fs.rmSync(tempDir, { recursive: true, force: true });
-    }
-    
-    // Set executable permissions
-    setExecutablePermissions(outputDir, platform);
-    
-    console.log(`Quarto CLI ${QUARTO_VERSION} (${platform}-${arch}) successfully downloaded to: ${outputDir}`);
-}
-
 async function main() {
     try {
         const rootDir = path.resolve(__dirname, '..');
-        
-        console.log('========================================');
-        console.log('Downloading Quarto CLI for all platforms');
-        console.log('========================================');
-        
-        // Download for all platforms
-        const platforms = [
-            { platform: 'darwin', arch: 'arm64' },
-            { platform: 'darwin', arch: 'x64' },
-            { platform: 'win32', arch: 'x64' },
-            { platform: 'linux', arch: 'x64' },
-            { platform: 'linux', arch: 'arm64' }
-        ];
-        
-        for (const { platform, arch } of platforms) {
-            console.log(`\nDownloading Quarto for ${platform}-${arch}...`);
-            await downloadForPlatform(platform, arch, rootDir);
-        }
-        
-        // Clean up download directory
         const downloadDir = path.join(rootDir, 'temp');
-        if (fs.existsSync(downloadDir)) {
-            fs.rmSync(downloadDir, { recursive: true, force: true });
+        const outputDir = path.join(rootDir, 'quarto');
+        
+        console.log(`Downloading Quarto CLI ${QUARTO_VERSION} for ${process.platform}-${process.arch}`);
+        
+        if (!fs.existsSync(downloadDir)) {
+            fs.mkdirSync(downloadDir, { recursive: true });
         }
         
-        console.log('\n========================================');
-        console.log('All Quarto CLI downloads completed!');
-        console.log('========================================');
+        if (fs.existsSync(outputDir)) {
+            console.log('Removing existing quarto directory...');
+            fs.rmSync(outputDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(outputDir, { recursive: true });
+        
+        const downloadUrl = getQuartoDownloadUrl();
+        const filename = path.basename(downloadUrl);
+        const archivePath = path.join(downloadDir, filename);
+        
+        await downloadFile(downloadUrl, archivePath);
+        
+        extractArchive(archivePath, outputDir);
+        
+        // Flatten the extracted directory structure
+        const extractedDirs = fs.readdirSync(outputDir).filter(item =>
+            fs.statSync(path.join(outputDir, item)).isDirectory() && item.startsWith('quarto-')
+        );
+
+        if (extractedDirs.length === 1) {
+            const extractedDir = path.join(outputDir, extractedDirs[0]);
+            const tempDir = path.join(outputDir, 'temp-move');
+
+            fs.renameSync(extractedDir, tempDir);
+            const contents = fs.readdirSync(tempDir);
+            for (const item of contents) {
+                const srcPath = path.join(tempDir, item);
+                const destPath = path.join(outputDir, item);
+                if (fs.existsSync(destPath)) {
+                    fs.rmSync(destPath, { recursive: true, force: true });
+                }
+                fs.renameSync(srcPath, destPath);
+            }
+            fs.rmSync(tempDir, { recursive: true, force: true });
+        }
+        
+        setExecutablePermissions(outputDir);
+        
+        fs.rmSync(downloadDir, { recursive: true, force: true });
+        
+        console.log(`Quarto CLI ${QUARTO_VERSION} successfully downloaded to: ${outputDir}`);
+        
+        const quartoPath = path.join(outputDir, 'bin', process.platform === 'win32' ? 'quarto.exe' : 'quarto');
+        if (fs.existsSync(quartoPath)) {
+            console.log(`Quarto CLI executable found at: ${quartoPath}`);
+        } else {
+            console.warn(`Warning: Quarto CLI executable not found at expected path: ${quartoPath}`);
+        }
         
     } catch (error) {
         console.error('Failed to download Quarto CLI:', error);
