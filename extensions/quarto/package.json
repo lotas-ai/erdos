@@ -1217,11 +1217,10 @@
     "vscode:prepublish": "node ../../node_modules/gulp/bin/gulp.js --gulpfile ../../build/gulpfile.extensions.js compile-extension:quarto",
     "install-vscode": "rm -rf *.vsix && vsce package && code --install-extension *.vsix",
     "install-positron": "rm -rf *.vsix && vsce package && positron --install-extension *.vsix",
-    "compile": "npm run download:quarto && gulp compile-extension:quarto && node build/sync-dist.js",
+    "compile": "gulp compile-extension:quarto && node build/sync-dist.js",
     "dev": "yarn run build dev",
     "lint": "eslint src --ext ts",
-    "build-lang": "node syntaxes/build-lang",
-    "download:quarto": "node build/download-quarto.js"
+    "build-lang": "node syntaxes/build-lang"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.18.7",

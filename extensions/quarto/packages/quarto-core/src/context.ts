@@ -199,22 +199,7 @@ function detectUserSpecifiedQuarto(
 function scanForQuarto(additionalSearchPaths?: string[]): QuartoInstallation | undefined {
   const scanPaths: string[] = [];
   
-  // Always use bundled Quarto CLI from VS Code extension
-  try {
-    const vscode = require('vscode');
-    if (vscode.extensions) {
-      const quartoExtension = vscode.extensions.getExtension('vscode.quarto');
-      if (quartoExtension) {
-        const bundledQuartoPath = path.join(quartoExtension.extensionPath, 'bin', 'bin');
-        scanPaths.push(bundledQuartoPath);
-      }
-    }
-  } catch (error) {
-    // VS Code context not available - this should not happen in normal operation
-    throw new Error('Quarto extension: VS Code context not available for bundled CLI access');
-  }
-
-  // Only include additional search paths if explicitly provided (for testing/development)
+  // Use additional search paths (e.g., app root standalone CLI)
   if (additionalSearchPaths) {
     scanPaths.push(...additionalSearchPaths);
   }
