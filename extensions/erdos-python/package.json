@@ -39,13 +39,13 @@
         }
     ],
     "license": "MIT",
-    "homepage": "https://github.com/willnickols/vscode",
+    "homepage": "https://github.com/lotas-ai/erdos",
     "repository": {
         "type": "git",
-        "url": "https://github.com/willnickols/vscode"
+        "url": "https://github.com/lotas-ai/erdos"
     },
     "bugs": {
-        "url": "https://github.com/willnickols/vscode/issues"
+        "url": "https://github.com/lotas-ai/erdos/issues"
     },
     "icon": "icon.png",
     "galleryBanner": {

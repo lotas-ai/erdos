@@ -68,8 +68,8 @@ else {
 			urlProtocol: 'erdos',
 			reportIssueUrl: 'https://github.com/microsoft/vscode/issues/new',
 			licenseName: 'AGPLv3',
-			licenseUrl: 'https://github.com/willnickols/vscode/blob/main/LICENSE-ERDOS.txt',
-			serverLicenseUrl: 'https://github.com/willnickols/vscode/blob/main/LICENSE-ERDOS.txt'
+			licenseUrl: 'https://github.com/lotas-ai/erdos/blob/main/LICENSE-ERDOS.txt',
+			serverLicenseUrl: 'https://github.com/lotas-ai/erdos/blob/main/LICENSE-ERDOS.txt'
 		});
 	}
 }
