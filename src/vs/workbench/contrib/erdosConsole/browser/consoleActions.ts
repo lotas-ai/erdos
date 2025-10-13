@@ -21,6 +21,7 @@ import { IFileDialogService } from '../../../../platform/dialogs/common/dialogs.
 import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
+import { ErdosConsoleInstancesExistContext } from '../../../common/contextkeys.js';
 import { ITextModel } from '../../../../editor/common/model.js';
 import { IEditor } from '../../../../editor/common/editorCommon.js';
 import { EditorContextKeys } from '../../../../editor/common/editorContextKeys.js';
@@ -36,8 +37,6 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
 import { CodeAttributionSource } from '../../../services/languageRuntime/common/codeExecution.js';
 
 export const CONSOLE_VIEW_ID = ERDOS_CONSOLE_VIEW_ID;
-
-export const ERDOS_CONSOLE_INSTANCES_EXIST_KEY = 'erdosConsoleInstancesExist';
 
 /**
  * Parse a version string into major, minor, and patch numbers
@@ -353,7 +352,7 @@ export function registerConsoleActions(): void {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.and(
 						ContextKeyExpr.equals('view', CONSOLE_VIEW_ID),
-						ContextKeyExpr.equals(ERDOS_CONSOLE_INSTANCES_EXIST_KEY, true)
+						ErdosConsoleInstancesExistContext
 					),
 					group: 'navigation',
 					order: 0
@@ -393,6 +392,61 @@ export function registerConsoleActions(): void {
 			} catch (error) {
 				notificationService.error(
 					localize('console.workingDirectoryError', "Failed to change working directory: {0}", error)
+				);
+			}
+		}
+	});
+
+	registerAction2(class extends Action2 {
+		constructor() {
+			super({
+				id: 'workbench.action.erdosConsole.setWorkingDirectoryFromEditor',
+				title: localize2('setWorkingDirectoryFromEditor', 'Set as Working Directory'),
+				f1: false,
+				menu: [{
+					id: MenuId.EditorTitleContext,
+					when: ErdosConsoleInstancesExistContext,
+					group: '2_workspace',
+					order: 100
+				}]
+			});
+		}
+
+		async run(accessor: ServicesAccessor, resource?: URI): Promise<void> {
+			const sessionManager = accessor.get(ISessionManager);
+			const notificationService = accessor.get(INotificationService);
+			const fileService = accessor.get(IFileService);
+			const session = sessionManager.foregroundSession;
+
+			if (!session) {
+				notificationService.warn(
+					localize('console.noActiveSession', "No active console session")
+				);
+				return;
+			}
+
+			if (!resource) {
+				return;
+			}
+
+			try {
+				// Check if the resource exists
+				const stat = await fileService.stat(resource);
+				
+				// Get the directory path
+				let directoryUri: URI;
+				if (stat.isDirectory) {
+					directoryUri = resource;
+				} else {
+					// Get the parent directory of the file using dirname
+					directoryUri = URI.joinPath(resource, '..');
+				}
+
+				// Set the working directory
+				await session.setWorkingDirectory(directoryUri.fsPath);
+			} catch (error) {
+				notificationService.error(
+					localize('console.setWorkingDirectoryError', "Failed to set working directory: {0}", error)
 				);
 			}
 		}
@@ -522,7 +576,7 @@ export function registerConsoleActions(): void {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.and(
 						ContextKeyExpr.equals('view', CONSOLE_VIEW_ID),
-						ContextKeyExpr.equals(ERDOS_CONSOLE_INSTANCES_EXIST_KEY, true)
+						ErdosConsoleInstancesExistContext
 					),
 					group: 'navigation',
 					order: 30
@@ -547,7 +601,7 @@ export function registerConsoleActions(): void {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.and(
 						ContextKeyExpr.equals('view', CONSOLE_VIEW_ID),
-						ContextKeyExpr.equals(ERDOS_CONSOLE_INSTANCES_EXIST_KEY, true)
+						ErdosConsoleInstancesExistContext
 					),
 					group: 'navigation',
 					order: 10
@@ -594,7 +648,7 @@ export function registerConsoleActions(): void {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.and(
 						ContextKeyExpr.equals('view', CONSOLE_VIEW_ID),
-						ContextKeyExpr.equals(ERDOS_CONSOLE_INSTANCES_EXIST_KEY, true)
+						ErdosConsoleInstancesExistContext
 					),
 					group: 'navigation',
 					order: 20
@@ -628,7 +682,7 @@ export function registerConsoleActions(): void {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.and(
 						ContextKeyExpr.equals('view', CONSOLE_VIEW_ID),
-						ContextKeyExpr.equals(ERDOS_CONSOLE_INSTANCES_EXIST_KEY, true)
+						ErdosConsoleInstancesExistContext
 					),
 					group: 'navigation',
 					order: 21
@@ -657,7 +711,7 @@ export function registerConsoleActions(): void {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.and(
 						ContextKeyExpr.equals('view', CONSOLE_VIEW_ID),
-						ContextKeyExpr.equals(ERDOS_CONSOLE_INSTANCES_EXIST_KEY, false)
+						ErdosConsoleInstancesExistContext.negate()
 					),
 					group: 'navigation',
 					order: -1
@@ -894,7 +948,7 @@ export function registerConsoleActions(): void {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.and(
 						ContextKeyExpr.equals('view', CONSOLE_VIEW_ID),
-						ContextKeyExpr.equals(ERDOS_CONSOLE_INSTANCES_EXIST_KEY, true)
+						ErdosConsoleInstancesExistContext
 					),
 					group: 'navigation',
 					order: 10
