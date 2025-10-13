@@ -1,0 +1,109 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.help-main-wrapper {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	background-color: var(--vscode-sideBar-background);
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+}
+
+.help-content-wrapper {
+	flex: 1;
+	overflow: hidden;
+	position: relative;
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+}
+
+.help-content-wrapper * {
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+}
+
+.help-content-wrapper button,
+.help-content-wrapper input,
+.help-content-wrapper select,
+.help-content-wrapper textarea {
+	user-select: auto;
+	-webkit-user-select: auto;
+	-moz-user-select: auto;
+	-ms-user-select: auto;
+}
+
+.topic-history-selector-container,
+.topic-search-container {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	pointer-events: all;
+	position: relative;
+	z-index: 1;
+	overflow: visible !important; /* Allow dropdown to overflow */
+}
+
+.topic-history-selector-container {
+	flex-shrink: 1;
+	min-width: 0;
+}
+
+.topic-search-container {
+	flex-shrink: 0;
+}
+
+/* Pane header layout - left actions should shrink, right actions should not */
+.pane-header > .left-actions {
+	flex-shrink: 1 !important;
+	min-width: 0 !important;
+	overflow: visible !important;
+}
+
+.pane-header > .actions {
+	flex-shrink: 0 !important;
+}
+
+/* Make containers inside left-actions flex properly */
+.pane-header > .left-actions .monaco-toolbar,
+.pane-header > .left-actions .monaco-action-bar,
+.pane-header > .left-actions .actions-container {
+	display: flex !important;
+	flex-shrink: 1 !important;
+	min-width: 0 !important;
+}
+
+/* Regular action items (navigation buttons) should NOT shrink */
+.pane-header > .left-actions .action-item {
+	flex-shrink: 0 !important;
+}
+
+/* ONLY the history dropdown action item should shrink */
+.pane-header > .left-actions .action-item:has(.topic-history-selector-container) {
+	flex-shrink: 1 !important;
+	min-width: 0 !important;
+}
+
+/* Custom opacity for disabled help navigation buttons */
+.pane-header .monaco-action-bar .action-item.disabled .action-label.icon,
+.pane-header .monaco-action-bar .action-item.disabled .action-label.icon::before,
+.pane-header .monaco-action-bar .action-item.disabled .action-label.icon:hover {
+	opacity: 0.5 !important;
+}
+
+
+
+
+
+
+
+

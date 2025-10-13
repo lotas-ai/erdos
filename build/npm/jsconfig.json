@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"target": "es2024",
+		"lib": [
+			"ES2024"
+		],
+		"module": "node16",
+		"checkJs": true,
+		"noEmit": true
+	}
+}

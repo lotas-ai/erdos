@@ -1,0 +1,50 @@
+{
+  "name": "erdos-kernel-manager",
+  "displayName": "Erdos Kernel Manager",
+  "description": "Manages kernel lifecycle for R and Python",
+  "version": "1.0.0",
+  "publisher": "erdos",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "main": "./out/extension.js",
+  "browser": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "erdos.kernelManager.startKernel",
+        "title": "Start Kernel"
+      },
+      {
+        "command": "erdos.kernelManager.stopKernel",
+        "title": "Stop Kernel"
+      },
+      {
+        "command": "erdos.kernelManager.listKernels",
+        "title": "List Kernels"
+      },
+      {
+        "command": "erdos.kernelManager.getManagerPort",
+        "title": "Get Kernel Manager Port"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "22.x",
+    "@types/vscode": "^1.82.0",
+    "typescript": "^5.2.2",
+    "eslint": "^8.57.1",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0"
+  }
+}
+

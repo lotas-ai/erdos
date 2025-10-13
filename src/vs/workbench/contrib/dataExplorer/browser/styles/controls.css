@@ -1,0 +1,241 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* ===== SAVE CONTROLS ===== */
+
+/* Data Explorer action styling following VS Code patterns */
+.data-explorer-editor .data-header {
+	display: flex;
+	align-items: center;
+	padding: 4px 8px;
+	min-height: 28px;
+}
+
+.data-explorer-editor .data-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.data-explorer-editor .data-actions .action-item {
+	display: flex;
+	align-items: center;
+}
+
+.data-explorer-editor .data-actions .action-label.codicon {
+	color: var(--vscode-icon-foreground);
+	font-size: 16px;
+	padding: 2px;
+	width: 16px;
+	height: 16px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.data-explorer-editor .data-actions .action-label.codicon:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.data-explorer-editor .data-actions .action-label.codicon:active {
+	background-color: var(--vscode-toolbar-activeBackground);
+}
+
+.data-explorer-editor .data-actions .action-label.codicon.dirty {
+	color: var(--vscode-charts-orange);
+}
+
+.data-explorer-editor .data-actions .action-label.codicon:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/* ===== HISTORY CONTROLS ===== */
+
+/* Undo/Redo button controls styling following VS Code patterns */
+
+.undo-redo-buttons {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.undo-button,
+.redo-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 4px 8px;
+	border: none;
+	background: transparent;
+	color: var(--vscode-button-foreground);
+	font-size: 14px;
+	line-height: 1.2;
+	cursor: pointer;
+	border-radius: 2px;
+	min-width: 28px;
+	min-height: 28px;
+	transition: background-color 0.1s ease;
+}
+
+.undo-button:hover:not(:disabled),
+.redo-button:hover:not(:disabled) {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.undo-button:active:not(:disabled),
+.redo-button:active:not(:disabled) {
+	background-color: var(--vscode-toolbar-activeBackground);
+}
+
+.undo-button:focus,
+.redo-button:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.undo-button:disabled,
+.redo-button:disabled {
+	color: var(--vscode-disabledForeground);
+	cursor: not-allowed;
+	opacity: 0.6;
+}
+
+/* Icon styling */
+.undo-icon,
+.redo-icon {
+	font-size: 16px;
+	font-weight: bold;
+	margin-right: 4px;
+	user-select: none;
+}
+
+/* Button label styling */
+.button-label {
+	font-size: 12px;
+	font-family: var(--vscode-font-family);
+	white-space: nowrap;
+}
+
+/* Hide labels on smaller screens */
+@media (max-width: 600px) {
+	.button-label {
+		display: none;
+	}
+	
+	.undo-icon,
+	.redo-icon {
+		margin-right: 0;
+	}
+}
+
+/* When used in toolbar context */
+.data-explorer-editor .data-actions .undo-redo-buttons {
+	margin-left: 0;
+	padding-left: 0;
+}
+
+.data-explorer-editor .data-actions .undo-button,
+.data-explorer-editor .data-actions .redo-button {
+	padding: 2px 6px;
+	min-width: 24px;
+	min-height: 24px;
+	font-size: 12px;
+}
+
+.data-explorer-editor .data-actions .undo-icon,
+.data-explorer-editor .data-actions .redo-icon {
+	font-size: 14px;
+	margin-right: 2px;
+}
+
+.data-explorer-editor .data-actions .button-label {
+	font-size: 11px;
+}
+
+/* Compact mode - icons only */
+.undo-redo-buttons.compact .button-label {
+	display: none;
+}
+
+.undo-redo-buttons.compact .undo-icon,
+.undo-redo-buttons.compact .redo-icon {
+	margin-right: 0;
+}
+
+.undo-redo-buttons.compact .undo-button,
+.undo-redo-buttons.compact .redo-button {
+	min-width: 24px;
+	padding: 2px 4px;
+}
+
+/* Status indicator when operations are available */
+.undo-button:not(:disabled) .undo-icon {
+	color: var(--vscode-symbolIcon-operatorForeground);
+}
+
+.redo-button:not(:disabled) .redo-icon {
+	color: var(--vscode-symbolIcon-operatorForeground);
+}
+
+/* Wrap Text Button Controls */
+.wrap-text-button-container {
+	display: flex;
+	align-items: center;
+}
+
+.wrap-text-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 4px 8px;
+	border: none;
+	background: transparent;
+	color: var(--vscode-button-foreground);
+	font-size: 14px;
+	line-height: 1.2;
+	cursor: pointer;
+	border-radius: 2px;
+	min-width: 28px;
+	min-height: 28px;
+	transition: background-color 0.1s ease;
+}
+
+.wrap-text-button:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.wrap-text-button:active {
+	background-color: var(--vscode-toolbar-activeBackground);
+}
+
+.wrap-text-button:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/* When used in toolbar context */
+.data-explorer-editor .data-actions .wrap-text-button-container {
+	margin-left: 0;
+	padding-left: 0;
+}
+
+.data-explorer-editor .data-actions .wrap-text-button {
+	padding: 2px 6px;
+	min-width: 24px;
+	min-height: 24px;
+	font-size: 12px;
+}
+
+/* Compact mode - icons only */
+.wrap-text-button-container.compact .button-label {
+	display: none;
+}
+
+.wrap-text-button-container.compact .wrap-text-button {
+	min-width: 24px;
+	padding: 2px 4px;
+}

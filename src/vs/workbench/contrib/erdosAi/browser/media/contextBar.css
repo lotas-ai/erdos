@@ -1,0 +1,320 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Context bar - now positioned inside input container */
+.erdos-ai-context-bar {
+	background-color: transparent;
+	border: none;
+	border-radius: 0;
+	padding: 4px 0 3px 0;
+	margin: -2px 0 4px -2px;
+	min-height: 26px;
+	height: auto;
+	overflow: visible;
+	box-sizing: border-box;
+	display: flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	position: relative;
+}
+
+.erdos-ai-context-bar.drag-over {
+	border-color: var(--vscode-focusBorder);
+	background-color: var(--vscode-list-dropBackground, rgba(0, 122, 204, 0.1));
+}
+
+.context-bar-content {
+	display: flex;
+	align-items: center;
+	flex-wrap: nowrap;
+	width: 100%;
+	padding: 0;
+	overflow-x: auto;
+	overflow-y: visible;
+}
+
+/* Unified context element styling - used by ALL context elements */
+.erdos-ai-context-element {
+	display: inline-flex !important;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--vscode-input-background) !important;
+	border: 1px solid var(--vscode-input-border, #e0e0e0) !important;
+	border-radius: 3px;
+	padding: 1px 5px;
+	margin-left: 3px;
+	margin-right: 5px;
+	cursor: pointer;
+	color: var(--vscode-input-placeholderForeground) !important;
+	font-family: var(--vscode-font-family);
+	font-size: 11px;
+	font-weight: 400;
+	height: 18px;
+	line-height: 14px;
+	vertical-align: middle;
+	position: relative;
+	top: 0px;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.erdos-ai-context-element:hover {
+	background-color: var(--vscode-input-background);
+	opacity: 0.8;
+}
+
+/* Context items container */
+.context-items-container {
+	display: inline-flex;
+	flex-wrap: nowrap;
+	align-items: center;
+	overflow-x: auto;
+	overflow-y: visible;
+	min-height: 18px;
+	margin-top: 0px;
+	margin-bottom: 0;
+	max-width: calc(100% - 30px);
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.context-items-container::-webkit-scrollbar {
+	display: none;
+}
+
+/* Context items need max-width and overflow for long names */
+.erdos-ai-context-element.context-item {
+	max-width: 175px;
+	overflow: hidden;
+}
+
+/* Clickable context items */
+.erdos-ai-context-element.context-item.clickable {
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+}
+
+.erdos-ai-context-element.context-item.clickable:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+/* Context item icon - sized to not disrupt vertical height */
+.context-item-icon {
+	margin-right: 3px;
+	flex-shrink: 0;
+	position: relative;
+	top: 0px;
+	width: 12px;
+	height: 12px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: opacity 0.2s ease;
+}
+
+.context-item-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+/* VSCode monaco-icon-label support for file icons */
+.context-item-icon .monaco-icon-label {
+	display: flex;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 12px;
+	min-width: 12px;
+	font-size: 12px;
+}
+
+.context-item-icon .monaco-icon-label::before {
+	/* File icons rendered as background image - same as VSCode */
+	background-size: 12px;
+	background-position: left center;
+	background-repeat: no-repeat;
+	padding-right: 0; /* No padding since we don't show text */
+	width: 12px;
+	height: 12px;
+	line-height: inherit !important;
+	display: inline-block;
+	
+	/* Position adjustment: 4px left, 1px up */
+	position: relative;
+	left: -4px;
+	top: -1px;
+	
+	/* Font icons support */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	vertical-align: top;
+	flex-shrink: 0;
+}
+
+/* X button that appears on hover */
+.context-item-remove-hover {
+	margin-right: 3px;
+	flex-shrink: 0;
+	position: relative;
+	top: 0px;
+	width: 12px;
+	height: 12px;
+	display: none;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	color: #666;
+	font-size: 12px;
+	font-weight: bold;
+	line-height: 1;
+	transition: opacity 0.2s ease;
+}
+
+.context-item-remove-hover:hover {
+	color: #333;
+}
+
+/* Show X and hide icon on hover */
+.erdos-ai-context-element.context-item:hover .context-item-icon {
+	display: none;
+}
+
+.erdos-ai-context-element.context-item:hover .context-item-remove-hover {
+	display: inline-flex;
+}
+
+.context-item-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 120px;
+	flex: 1;
+}
+
+/* Attach menu */
+.erdos-ai-attach-menu {
+	position: absolute;
+	bottom: 100%;
+	left: 3px;
+	z-index: 1000;
+	background-color: var(--vscode-menu-background);
+	border: 1px solid var(--vscode-menu-border);
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	min-width: 105px; /* 70% of 150px */
+	width: 105px;
+	padding: 2px 0;
+	margin-bottom: 2px;
+}
+
+.attach-menu-item {
+	display: flex;
+	align-items: center;
+	background: none;
+	border: none;
+	padding: 2px 12px;
+	width: 100%;
+	text-align: left;
+	cursor: pointer;
+	font-size: 12px;
+	color: var(--vscode-menu-foreground);
+}
+
+.attach-menu-item:hover {
+	background-color: var(--vscode-menu-selectionBackground);
+}
+
+.attach-menu-icon {
+	margin-right: 8px;
+	font-size: 12px;
+	width: 16px;
+	flex-shrink: 0;
+}
+
+.attach-menu-chevron {
+	margin-left: auto;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	opacity: 0.7;
+}
+
+/* Search dropdown - positioned to the right like RAO */
+.erdos-ai-search-dropdown {
+	position: fixed !important; /* Will be positioned by JavaScript */
+	z-index: 1001 !important;
+	background-color: var(--vscode-menu-background);
+	border: 1px solid var(--vscode-menu-border);
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+	width: 240px;
+	max-height: 300px;
+	display: flex !important;
+	flex-direction: column;
+}
+
+.search-dropdown-input {
+	width: 100%;
+	padding: 2px 12px; /* Match menu item padding */
+	border: none;
+	border-bottom: 1px solid var(--vscode-menu-border);
+	background-color: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	font-size: 12px;
+	outline: none;
+	box-sizing: border-box;
+	height: auto; /* Let height be determined by content and padding */
+}
+
+.search-dropdown-input::placeholder {
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.search-dropdown-results {
+	flex: 1;
+	overflow-y: auto;
+	max-height: 240px;
+}
+
+.search-dropdown-item {
+	padding: 2px 12px; /* Match main menu items exactly */
+	font-size: 12px;
+	color: var(--vscode-menu-foreground);
+	cursor: pointer;
+	border-bottom: 1px solid var(--vscode-menu-separatorBackground);
+	display: flex;
+	align-items: center;
+	height: auto; /* Let height be determined by content and padding */
+}
+
+.search-dropdown-item:last-child {
+	border-bottom: none;
+}
+
+.search-dropdown-item:hover {
+	background-color: var(--vscode-menu-selectionBackground);
+}
+
+.search-dropdown-item.loading,
+.search-dropdown-item.no-results {
+	color: var(--vscode-descriptionForeground);
+	cursor: default;
+	font-style: italic;
+}
+
+.search-dropdown-item.loading:hover,
+.search-dropdown-item.no-results:hover {
+	background-color: transparent;
+}
+
+/* Responsive behavior */
+@media (max-width: 600px) {
+	.context-item-name {
+		max-width: 80px;
+	}
+	
+	.erdos-ai-search-dropdown {
+		width: 200px;
+	}
+}

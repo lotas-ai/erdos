@@ -1,0 +1,66 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "*": ["types/*"],
+            "vscode": ["../../src/vscode-dts/vscode.d.ts"],
+            "vscode-languageclient": [
+                "node_modules/vscode-languageclient/lib/common/api.d.ts"
+            ],
+            "vscode-languageclient/node": [
+                "node_modules/vscode-languageclient/lib/node/main.d.ts"
+            ]
+        },
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "target": "es2018",
+        "outDir": "out",
+        "lib": [
+            "es6",
+            "es2018",
+            "dom",
+            "ES2019",
+            "ES2020"
+        ],
+        "types": ["reflect-metadata", "node"],
+        "sourceMap": true,
+        "rootDir": "src",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "resolveJsonModule": true,
+        "removeComments": true
+    },
+    "exclude": [
+        "node_modules",
+        ".vscode-test",
+        ".vscode test",
+        "src/server/node_modules",
+        "src/client/node_modules",
+        "src/server/src/typings",
+        "src/client/src/typings",
+        "src/smoke",
+        "build",
+        "out",
+        "tmp",
+        "pythonExtensionApi"
+    ],
+    "include": [
+        "src/*",
+        "src/client/**/*",
+        "src/test/**/*",
+        "typings/*.d.ts",
+        "typings/vscode-proposed/*.d.ts",
+        "types/*.d.ts",
+        "types/src/vscode-dts/*.d.ts",
+        "../../src/vscode-dts/vscode.proposed.erdosResolveSymlinks.d.ts",
+        "../../src/erdos-dts/erdos.d.ts",
+        "../../src/erdos-dts/ui-comm.d.ts"
+    ]
+}

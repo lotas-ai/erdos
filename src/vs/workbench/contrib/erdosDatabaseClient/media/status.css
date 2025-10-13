@@ -1,0 +1,447 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Database Status Monitor Styles */
+
+.status-container {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.status-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--vscode-widget-border);
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.tab-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    color: var(--vscode-foreground);
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tab-btn:hover:not(:disabled) {
+    background: var(--vscode-list-hoverBackground);
+}
+
+.tab-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.tab-btn.active {
+    color: var(--vscode-panelTitle-activeForeground);
+    border-bottom-color: var(--vscode-panelTitle-activeForeground);
+}
+
+
+.tab-btn.refresh-btn {
+    padding: 8px 12px;
+}
+
+.error-message .btn {
+    margin-left: 12px;
+    padding: 4px 8px;
+    font-size: 12px;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    cursor: pointer;
+    color: inherit;
+}
+
+.tab-panel {
+    flex: 1; /* Take remaining space after status-tabs */
+    display: flex; /* Pass-through flex container */
+    flex-direction: column; /* Stack children vertically */
+    min-height: 0; /* Critical: allow shrinking below content size */
+    overflow: visible; /* Never interfere with scrolling */
+    /* Remove all styling that could interfere */
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Dashboard Panel Styles */
+.charts-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+}
+
+.chart-row {
+    display: flex;
+    gap: 16px;
+    flex: 1;
+}
+
+.chart-container {
+    flex: 1;
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 4px;
+    padding: 16px;
+    background: var(--vscode-editor-background);
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-container h4 {
+    margin: 0 0 12px 0;
+    color: var(--vscode-foreground);
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--vscode-widget-border);
+    padding-bottom: 8px;
+}
+
+.chart {
+    flex: 1;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--vscode-editor-background);
+    border-radius: 4px;
+}
+
+/* Grid Panels - Take full flex space and enable scrolling */
+.status-container .data-table-container {
+    flex: 1; /* Take all available space from tab-panel */
+    overflow: auto; /* Enable scrolling when content exceeds bounds */
+    min-height: 0; /* Critical: allow shrinking below content size */
+}
+
+/* Ensure table styles are properly applied */
+.status-container .results-table {
+    width: 100%;
+    min-width: 100%; /* Ensure table can grow beyond container horizontally */
+    height: auto; /* Let table grow to content height */
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    font-family: var(--vscode-editor-font-family);
+    display: table;
+    table-layout: auto; /* Changed back to auto for proper column sizing */
+}
+
+.status-container .results-table thead {
+    display: table-header-group;
+}
+
+.status-container .results-table tbody {
+    display: table-row-group;
+}
+
+.status-container .results-table tr {
+    display: table-row;
+}
+
+.status-container .results-table th,
+.status-container .results-table td {
+    display: table-cell;
+    border: 1px solid var(--vscode-widget-border);
+    padding: 6px 12px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0; /* Allow flex shrinking */
+}
+
+.status-container .results-table th {
+    background: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    text-align: left;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Resize handles for status tables */
+.status-container .column-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+    border-right: 2px solid transparent;
+    transition: border-color 0.2s ease;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.status-container .column-resize-handle:hover {
+    border-right-color: var(--vscode-focusBorder);
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.status-container .column-resize-handle:active {
+    border-right-color: var(--vscode-focusBorder);
+    background: rgba(0, 123, 255, 0.2);
+}
+
+.status-container .row-resize-handle {
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    cursor: row-resize;
+    background: transparent;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.2s ease;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.status-container .row-resize-handle:hover {
+    border-bottom-color: var(--vscode-focusBorder);
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.status-container .row-resize-handle:active {
+    border-bottom-color: var(--vscode-focusBorder);
+    background: rgba(0, 123, 255, 0.2);
+}
+
+/* Index column styling */
+.status-container .results-table .index-col {
+    width: 60px;
+    text-align: center;
+    color: var(--vscode-descriptionForeground);
+}
+
+.status-container .results-table .row-number-cell {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.1s ease;
+}
+
+.status-container .results-table .row-number-cell:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+/* Enhanced positioning for resize handles */
+.status-container .results-table th.column-header {
+    position: relative;
+    overflow: hidden;
+}
+
+.status-container .results-table th.column-header.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.status-container .results-table th.column-header.sortable:hover {
+    background: var(--vscode-list-hoverBackground);
+}
+
+/* Ensure resize handles take priority over column header clicks */
+.status-container .results-table th.column-header .column-header-content {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
+}
+
+.status-container .results-table .row-number-cell {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Sort indicators - Copy working pattern from results.css */
+.status-container .column-header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    position: relative;
+}
+
+.status-container .sort-indicators {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 16px;
+    justify-content: center;
+}
+
+.status-container .sort-chevron {
+    font-size: 8px;
+    opacity: 0.5;
+    margin: 0;
+    padding: 0;
+    line-height: 8px;
+    height: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-container .sort-chevron.active {
+    opacity: 1;
+    color: var(--vscode-foreground);
+}
+
+.status-container .sort-chevron.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.status-container .results-table th.sortable .sort-chevron {
+    transition: opacity 0.2s ease;
+}
+
+.status-container .results-table th.sortable:hover .sort-chevron {
+    opacity: 0.8;
+}
+
+.status-container .results-table th.sortable:hover .sort-chevron.active {
+    opacity: 1;
+}
+
+
+/* Loading States */
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 14px;
+}
+
+.loading-spinner .spinner {
+    margin-right: 8px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Error States */
+.error-message {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--vscode-inputValidation-errorBackground);
+    border: 1px solid var(--vscode-inputValidation-errorBorder);
+    border-radius: 4px;
+    margin-bottom: 16px;
+    color: var(--vscode-inputValidation-errorForeground);
+    font-size: 13px;
+}
+
+.error-message .error-text {
+    flex: 1;
+    margin-right: 12px;
+}
+
+.error-message .codicon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+/* Empty States */
+.empty-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--vscode-descriptionForeground);
+    font-size: 14px;
+    text-align: center;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--vscode-descriptionForeground);
+    text-align: center;
+}
+
+.empty-state .codicon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .chart-row {
+        flex-direction: column;
+    }
+    
+    .status-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .tab-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-bottom-width: 3px;
+    }
+    
+    
+    .chart-container {
+        padding: 12px;
+    }
+    
+    .chart {
+        min-height: 150px;
+    }
+}
+
+/* High Contrast Theme Support */
+@media (prefers-contrast: high) {
+    .chart-container,
+    .tab-panel {
+        border: 2px solid var(--vscode-contrastBorder);
+    }
+    
+    .tab-btn.active {
+        border-bottom-width: 3px;
+    }
+    
+    .status-container .results-table th,
+    .status-container .results-table td {
+        border: 2px solid var(--vscode-contrastBorder);
+    }
+}
+
+/* Dark Theme Adjustments */
+@media (prefers-color-scheme: dark) {
+    .chart-container {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+}

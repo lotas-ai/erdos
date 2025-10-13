@@ -1,0 +1,92 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.sidebar-list .item-cell .close-action:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+}
+
+.sidebar-list .item-cell .badge {
+	height: 15px;
+	width: 15px;
+	margin: 0 6px
+}
+
+.sidebar-list .item-cell--selected {
+	background-color: var(--vscode-list-inactiveSelectionBackground);
+	border-left: 1px solid var(--vscode-panelTitle-activeBorder);
+}
+
+.sidebar-list .item-cell:hover .close-action,
+.sidebar-list .item-cell:focus-within .close-action {
+	display: unset;
+}
+
+.sidebar-list {
+	border-top: 1px solid var(--vscode-erdosActionBar-border);
+	background-color: var(--vscode-tab-inactiveBackground);
+	flex-grow: 1;
+	overflow-y: auto;
+}
+
+.sidebar-list .item-cell .close-action .codicon {
+	height: 15px;
+	width: 15px;
+	vertical-align: text-bottom;
+}
+
+.sidebar-list .item-cell--selected:hover {
+	background-color: var(--vscode-list-activeSelectionBackground);
+}
+
+.sidebar-list .item-cell {
+	background-color: inherit;
+	border-left: 1px solid transparent;
+	color: var(--vscode-foreground);
+	cursor: pointer;
+	height: 22px;
+	padding: 0 10px;
+	width: 100%;
+	text-align: left;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+}
+
+.sidebar-list .item-cell .label-text {
+	flex: 1;
+	margin: 0;
+	line-height: 22px;
+	overflow: hidden;
+	min-width: 0;
+	text-overflow: ellipsis;
+}
+
+.sidebar-list .item-cell .session-spinner {
+	flex-shrink: 0;
+	font-size: 14px;
+	color: var(--vscode-foreground);
+	margin-left: 4px;
+}
+
+.sidebar-list .item-cell .close-action:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.sidebar-list .item-cell:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.sidebar-list .item-cell .close-action {
+	display: none;
+	background-color: transparent;
+	border: none;
+	cursor: pointer;
+	height: 22px;
+	padding: 2px;
+	border-radius: 5px;
+}

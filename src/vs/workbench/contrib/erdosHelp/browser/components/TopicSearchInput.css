@@ -1,0 +1,268 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.help-search-widget {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	overflow: visible !important; /* Allow dropdown to overflow */
+}
+
+.help-search-input-container {
+	position: relative;
+	display: flex;
+	align-items: center;
+	border: 1px solid var(--vscode-input-border);
+	border-radius: 4px;
+	background-color: var(--vscode-input-background);
+	transition: border-color 0.2s ease;
+}
+
+.help-search-input-container:hover {
+	border-color: var(--vscode-inputOption-hoverBackground);
+}
+
+.help-search-input-container.focused {
+	border-color: var(--vscode-focusBorder);
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.help-search-icon {
+	padding: 0 8px;
+	color: var(--vscode-input-placeholderForeground);
+	display: flex;
+	align-items: center;
+}
+
+.help-search-input {
+	flex: 1;
+	border: none !important;
+	outline: none !important;
+	background: transparent;
+	color: var(--vscode-input-foreground);
+	font-family: var(--vscode-font-family);
+	font-size: var(--vscode-font-size);
+	padding: 6px 8px 6px 0;
+	min-width: 0;
+	box-shadow: none !important;
+}
+
+.help-search-input:focus {
+	border: none !important;
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+.help-search-input::placeholder {
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.help-search-language-filters {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	margin-right: 4px;
+}
+
+.help-search-language-filter {
+	border: none;
+	background: transparent;
+	color: var(--vscode-input-placeholderForeground);
+	cursor: pointer;
+	padding: 4px;
+	border-radius: 3px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	font-size: 12px;
+	transition: all 0.15s ease;
+}
+
+.help-search-language-filter:hover {
+	background: var(--vscode-toolbar-hoverBackground);
+	color: var(--vscode-input-foreground);
+}
+
+.help-search-language-filter.selected {
+	background: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
+}
+
+.help-search-language-filter.selected:hover {
+	background: var(--vscode-button-hoverBackground);
+}
+
+.help-search-language-filter.inactive {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.help-search-language-filter.inactive:hover {
+	background: transparent;
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.help-search-language-filter:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.help-search-language-icon {
+	width: 12px;
+	height: 12px;
+	pointer-events: none;
+}
+
+.help-search-loading {
+	padding: 0 8px;
+	color: var(--vscode-input-placeholderForeground);
+	display: flex;
+	align-items: center;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+.help-search-dropdown {
+	position: fixed !important; /* Use fixed positioning to escape overflow constraints */
+	z-index: 10000 !important;
+	max-height: 320px;
+	overflow-y: auto;
+	background-color: var(--vscode-erdosDropDownListBox-background);
+	border: 1px solid var(--vscode-erdosDropDownListBox-border);
+	border-radius: 4px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	display: flex;
+	flex-direction: column;
+}
+
+.help-search-no-results {
+	padding: 8px;
+	color: var(--vscode-descriptionForeground);
+	font-style: italic;
+	text-align: center;
+	font-size: 13px;
+	height: 26px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: default;
+}
+
+.help-search-item {
+	border: none;
+	display: grid;
+	align-content: center;
+	background: transparent;
+	color: var(--vscode-erdosDropDownListBox-foreground);
+	grid-template-columns: [topic] 1fr [end];
+	border-radius: 0;
+	margin: 0;
+	padding: 4px 8px;
+	position: relative;
+	transition: none;
+	cursor: pointer;
+	width: 100%;
+	text-align: left;
+}
+
+.help-search-item:hover {
+	color: var(--vscode-erdosDropDownListBox-hoverForeground);
+	background: var(--vscode-erdosDropDownListBox-hoverBackground);
+}
+
+.help-search-item:focus {
+	outline: none;
+}
+
+.help-search-item:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	background: var(--vscode-erdosDropDownListBox-hoverBackground);
+}
+
+.help-search-item.selected {
+	background: var(--vscode-erdosDropDownListBox-hoverBackground);
+	color: var(--vscode-erdosDropDownListBox-hoverForeground);
+}
+
+.help-search-topic {
+	grid-column: topic / end;
+	font-size: 13px;
+	color: inherit;
+	font-weight: normal;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: normal;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+
+.help-search-widget.home {
+	width: 100%;
+	max-width: 600px;
+	margin: 0 auto;
+}
+
+.help-search-widget.home .help-search-input-container {
+	padding: 2px;
+	border-radius: 6px;
+}
+
+.help-search-widget.home .help-search-input {
+	padding: 12px 8px 12px 0;
+	font-size: 14px;
+}
+
+.help-search-widget.home .help-search-icon {
+	padding: 0 12px;
+}
+
+.help-search-widget.actionbar {
+	width: 200px;
+	min-width: 150px;
+}
+
+.help-search-widget.actionbar .help-search-input-container {
+	border-radius: 3px;
+}
+
+.help-search-widget.actionbar .help-search-input {
+	padding: 4px 6px 4px 0;
+	font-size: 12px;
+}
+
+.help-search-widget.actionbar .help-search-icon {
+	padding: 0 6px;
+}
+
+@media (max-width: 600px) {
+	.help-search-widget.home {
+		max-width: 100%;
+		margin: 0 8px;
+	}
+}
+
+.vs-dark .help-search-input-container.focused,
+.hc-black .help-search-input-container.focused {
+	outline-width: 2px;
+}
+
+.help-search-item:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.help-search-widget.loading .help-search-input {
+	opacity: 0.7;
+}

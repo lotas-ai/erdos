@@ -1,0 +1,1306 @@
+{
+	"name": "erdos-database-client",
+	"displayName": "Erdos Database Client",
+	"description": "Database Client for VS Code - Built-in Extension",
+	"version": "3.9.8",
+	"publisher": "erdos",
+	"icon": "resources/logo.png",
+	"engines": {
+		"vscode": "^1.51.0"
+	},
+	"enabledApiProposals": [
+		"extensionRuntime"
+	],
+	"categories": [
+		"Programming Languages",
+		"Keymaps"
+	],
+	"keywords": [
+		"SQL",
+		"MySQL",
+		"Database",
+		"Postgresql",
+		"Redis",
+		"MongoDB",
+		"ElasticSearch"
+	],
+	"activationEvents": [
+		"onCommand:database.refresh",
+		"onView:erdosDatabaseClient.explorer",
+		"onView:erdosDatabaseClient.history"
+	],
+	"main": "./out/extension",
+	"contributes": {
+		"languages": [
+			{
+				"id": "es",
+				"aliases": [
+					"ElasticSearch",
+					"es",
+					"elasticsearch"
+				],
+				"extensions": [
+					"es"
+				],
+				"configuration": "./syntaxes/es.configuration.json"
+			},
+			{
+				"id": "sql",
+				"extensions": [
+					".sql",
+					".dsql"
+				],
+				"aliases": [
+					"SQL"
+				],
+				"configuration": "./syntaxes/language-configuration.json"
+			}
+		],
+		"snippets": [
+			{
+				"language": "sql",
+				"path": "./syntaxes/snippets.json"
+			}
+		],
+		"grammars": [
+			{
+				"language": "sql",
+				"scopeName": "source.sql",
+				"path": "./syntaxes/mysql.tmLanguage.json"
+			},
+			{
+				"language": "es",
+				"scopeName": "source.es",
+				"path": "./syntaxes/es.tmLanguage.json"
+			}
+		],
+		"commands": [
+			{
+				"command": "database.struct.diff",
+				"title": "%command.struct.diff%",
+				"category": "MySQL",
+				"icon": "$(sync)"
+			},
+			{
+				"command": "database.history.open",
+				"title": "%command.history.open%",
+				"category": "MySQL",
+				"icon": "$(history)"
+			},
+			{
+				"command": "database.history.view",
+				"title": "Open Query"
+			},
+			{
+				"command": "database.history.copy",
+				"title": "Copy SQL"
+			},
+			{
+				"command": "database.history.run",
+				"title": "Run Query"
+			},
+			{
+				"command": "database.history.delete",
+				"title": "Delete Entry"
+			},
+			{
+				"command": "database.history.clear",
+				"title": "Clear All History"
+			},
+			{
+				"command": "database.setting.open",
+				"title": "%command.setting.open%",
+				"category": "MySQL",
+				"icon": "$(settings)"
+			},
+			{
+				"command": "database.refresh",
+				"title": "%command.refresh%",
+				"category": "MySQL",
+				"icon": "$(refresh)"
+			},
+			{
+				"command": "database.host.copy",
+				"title": "%command.host.copy%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.name.copy",
+				"title": "%command.name.copy%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.query.add",
+				"title": "%command.query.add%",
+				"icon": "$(add)",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.query.rename",
+				"title": "%command.query.rename%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.query.run",
+				"title": "%command.query.run%",
+				"icon": "$(run)",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.connection.edit",
+				"title": "%command.connection.edit%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.connection.config",
+				"title": "%command.connection.config%",
+				"icon": "$(gear)",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.connection.disable",
+				"title": "%command.connection.disable%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.server.info",
+				"title": "%command.server.info%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.connection.delete",
+				"title": "%command.connection.delete%",
+				"category": "MySQL",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "database.database.add",
+				"title": "%command.database.add%",
+				"icon": "$(add)",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.db.drop",
+				"title": "%command.db.drop%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.runQuery",
+				"title": "%command.runQuery%",
+				"category": "MySQL",
+				"icon": "$(run)"
+			},
+			{
+				"command": "database.runAllQuery",
+				"title": "%command.runAllQuery%",
+				"category": "MySQL",
+				"icon": "$(run)"
+			},
+			{
+				"command": "database.query.switch",
+				"title": "%command.query.switch%",
+				"category": "MySQL",
+				"icon": "$(symbol-file)"
+			},
+			{
+				"command": "database.data.import",
+				"title": "%command.data.import%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.data.export",
+				"title": "%command.data.export%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.struct.export",
+				"title": "%command.struct.export%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.document.generate",
+				"title": "%command.document.generate%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.db.active",
+				"title": "%command.db.active%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.table.truncate",
+				"title": "%command.table.truncate%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.db.truncate",
+				"title": "%command.db.truncate%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.table.drop",
+				"title": "%command.table.drop%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.mock.run",
+				"title": "%command.mock.run%",
+				"category": "MySQL",
+				"icon": "$(run)"
+			},
+			{
+				"command": "database.mock.table",
+				"title": "%command.mock.table%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.changeTableName",
+				"title": "%command.changeTableName%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.table.design",
+				"title": "%comman.table.design%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.column.add",
+				"title": "%command.column.add%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.column.up",
+				"title": "%command.column.up%",
+				"category": "MySQL",
+				"icon": "$(arrow-up)"
+			},
+			{
+				"command": "database.column.down",
+				"title": "%command.column.down%",
+				"category": "MySQL",
+				"icon": "$(arrow-down)"
+			},
+			{
+				"command": "database.table.source",
+				"title": "%command.table.source%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.view.source",
+				"title": "%command.view.source%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.table.show",
+				"title": "%command.table.show%",
+				"category": "MySQL",
+				"icon": "$(list-flat)"
+			},
+			{
+				"command": "database.column.update",
+				"title": "%command.column.update%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.column.drop",
+				"title": "%command.column.drop%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.template.sql",
+				"title": "%command.template.sql%",
+				"category": "MySQL",
+				"icon": "$(symbol-file)"
+			},
+			{
+				"command": "database.template.table",
+				"title": "%command.template.table%",
+				"category": "MySQL",
+				"icon": "$(add)"
+			},
+			{
+				"command": "database.template.view",
+				"title": "%command.template.view%",
+				"category": "MySQL",
+				"icon": "$(add)"
+			},
+			{
+				"command": "database.template.procedure",
+				"title": "%command.template.procedure%",
+				"category": "MySQL",
+				"icon": "$(add)"
+			},
+			{
+				"command": "database.template.trigger",
+				"title": "%command.template.trigger%",
+				"category": "MySQL",
+				"icon": "$(add)"
+			},
+			{
+				"command": "database.template.function",
+				"title": "%command.template.function%",
+				"category": "MySQL",
+				"icon": "$(add)"
+			},
+			{
+				"command": "database.template.user",
+				"title": "%command.template.user%",
+				"category": "MySQL",
+				"icon": "$(add)"
+			},
+			{
+				"command": "database.delete.user",
+				"title": "%command.delete.user%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.user.grant",
+				"title": "%command.user.grant%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.change.user",
+				"title": "%command.change.user%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.delete.view",
+				"title": "%command.delete.view%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.delete.procedure",
+				"title": "%command.delete.procedure%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.delete.function",
+				"title": "%command.delete.function%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.delete.trigger",
+				"title": "%command.delete.trigger%",
+				"category": "MySQL"
+			},
+			{
+				"command": "database.connection.terminal",
+				"title": "%command.connection.terminal%",
+				"icon": "$(terminal)"
+			},
+			{
+				"command": "database.redis.connection.status",
+				"title": "%command.redis.connection.status%"
+			},
+			{
+				"command": "database.redis.key.del",
+				"title": "%command.redis.key.del%",
+				"icon": "$(trash)"
+			},
+			{
+				"command": "database.redis.key.detail",
+				"title": "%command.redis.key.detail%"
+			},
+			{
+				"command": "database.ssh.terminal.hear",
+				"title": "Open Terminal in hear"
+			},
+			{
+				"command": "database.ssh.path.copy",
+				"title": "Copy Path"
+			},
+			{
+				"command": "database.ssh.file.new",
+				"title": "New File"
+			},
+			{
+				"command": "database.ssh.folder.new",
+				"title": "New Folder"
+			},
+			{
+				"command": "database.ssh.host.copy",
+				"title": "Copy Host"
+			},
+			{
+				"command": "database.ssh.forward.port",
+				"title": "Forward Port"
+			},
+			{
+				"command": "database.ssh.socks.port",
+				"title": "Start Socks5 Proxy"
+			},
+			{
+				"command": "database.ssh.folder.open",
+				"title": "Open In Terminal"
+			},
+			{
+				"command": "database.ssh.file.delete",
+				"title": "Delete"
+			},
+			{
+				"command": "database.ssh.file.download",
+				"title": "Download File",
+				"icon": "$(cloud-download)"
+			},
+			{
+				"command": "database.ssh.file.upload",
+				"title": "Upload File",
+				"icon": "$(cloud-upload)"
+			},
+			{
+				"command": "erdos.getConnections",
+				"title": "Get Connections",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getConnection",
+				"title": "Get Connection",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.testConnection",
+				"title": "Test Connection",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.saveConnection",
+				"title": "Save Connection",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.deleteConnection",
+				"title": "Delete Connection",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getTreeNodes",
+				"title": "Get Tree Nodes",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.refreshTreeNode",
+				"title": "Refresh Tree Node",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.executeQuery",
+				"title": "Execute Query",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getQueryHistory",
+				"title": "Get Query History",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.saveModify",
+				"title": "Save Cell Modifications",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.esSort",
+				"title": "ElasticSearch Sort",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getTableDesign",
+				"title": "Get Table Design",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.updateTable",
+				"title": "Update Table",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.addColumn",
+				"title": "Add Column",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.updateColumn",
+				"title": "Update Column",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.deleteColumn",
+				"title": "Delete Column",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.addIndex",
+				"title": "Add Index",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.deleteIndex",
+				"title": "Delete Index",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getRedisStatus",
+				"title": "Get Redis Status",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getRedisKeys",
+				"title": "Get Redis Keys",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getRedisKey",
+				"title": "Get Redis Key",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.setRedisKey",
+				"title": "Set Redis Key",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.deleteRedisKey",
+				"title": "Delete Redis Key",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.renameRedisKey",
+				"title": "Rename Redis Key",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.executeRedisCommand",
+				"title": "Execute Redis Command",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.createSSHTerminal",
+				"title": "Create SSH Terminal",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getForwardingRules",
+				"title": "Get Forwarding Rules",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.createForwardingRule",
+				"title": "Create Forwarding Rule",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.startForwarding",
+				"title": "Start Forwarding",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.stopForwarding",
+				"title": "Stop Forwarding",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.deleteForwardingRule",
+				"title": "Delete Forwarding Rule",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getDatabaseStatus",
+				"title": "Get Database Status",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.compareSchemas",
+				"title": "Compare Schemas",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.syncSchemas",
+				"title": "Sync Schemas",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.exportData",
+				"title": "Export Data",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.importData",
+				"title": "Import Data",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getTreeNodesForView",
+				"title": "Get Tree Nodes For View",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.refreshTreeNodeForView",
+				"title": "Refresh Tree Node For View",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getQueryHistoryForView",
+				"title": "Get Query History For View",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.getQueryHistoryItems",
+				"title": "Get Query History Items",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.saveQueryToHistory",
+				"title": "Save Query To History",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.deleteHistoryItem",
+				"title": "Delete History Item",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.clearHistory",
+				"title": "Clear History",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.browseFile",
+				"title": "Browse File",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.saveFile",
+				"title": "Save File",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.uploadFile",
+				"title": "Upload File",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.downloadFile",
+				"title": "Download File",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.showInputBox",
+				"title": "Show Input Box",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.showQuickPick",
+				"title": "Show Quick Pick",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.showMessage",
+				"title": "Show Message",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.showProgress",
+				"title": "Show Progress",
+				"category": "Erdos Database Client"
+			},
+			{
+				"command": "erdos.database.addConnection",
+				"title": "Add Connection",
+				"icon": "$(add)",
+				"category": "Erdos Database Client"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "database.runQuery",
+				"key": "f9",
+				"when": "editorLangId == sql"
+			},
+			{
+				"command": "database.runQuery",
+				"key": "ctrl+enter",
+				"when": "editorLangId == sql"
+			},
+			{
+				"command": "database.runAllQuery",
+				"key": "ctrl+f9",
+				"when": "editorLangId == sql"
+			},
+			{
+				"command": "database.runAllQuery",
+				"key": "ctrl+shift+enter",
+				"when": "editorLangId == sql"
+			},
+			{
+				"command": "database.mock.run",
+				"when": "resourceFilename =~ /mock\\.json$/ ",
+				"key": "f9"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "database.runQuery",
+					"when": "editorLangId == sql",
+					"group": "navigation@-2"
+				},
+				{
+					"command": "database.runAllQuery",
+					"when": "editorLangId == sql",
+					"group": "navigation@1"
+				},
+				{
+					"command": "database.db.active",
+					"when": "editorLangId == sql",
+					"group": "navigation@2"
+				}
+			],
+			"editor/title": [
+				{
+					"command": "database.mock.run",
+					"when": "resourceFilename =~ /mock.json$/ ",
+					"group": "navigation"
+				},
+				{
+					"command": "database.runQuery",
+					"when": "editorLangId == sql || resourceFilename =~ /.sql$/ ",
+					"group": "navigation"
+				}
+			],
+			"view/title": [
+			],
+			"view/item/context": [
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(catalog|esConnection|sshConnection|folder|redisConnection|connection|tableGroup|viewGroup|systemViewGroup|triggerGroup|procedureGroup|functionGroup|table)$/",
+					"group": "inline@-2"
+				},
+				{
+					"command": "database.connection.edit",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(connection|esConnection|redisConnection|ftpConnection|sshConnection)$/",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.connection.disable",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(connection|esConnection|redisConnection|ftpConnection)$/",
+					"group": "1_mysql@4"
+				},
+				{
+					"command": "database.host.copy",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(connection|esConnection|redisConnection)$/",
+					"group": "1_mysql@6"
+				},
+				{
+					"command": "database.database.add",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == connection",
+					"group": "2_mysql@0"
+				},
+				{
+					"command": "database.query.add",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == queryGroup",
+					"group": "2_mysql@0"
+				},
+				{
+					"command": "database.query.rename",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == query",
+					"group": "2_mysql@0"
+				},
+				{
+					"command": "database.query.run",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == query",
+					"group": "2_mysql@0"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(esConnection|ftpConnection|ftpFolder)$/",
+					"group": "2_mysql@1"
+				},
+				{
+					"command": "database.server.info",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == connection",
+					"group": "4_mysql@1"
+				},
+				{
+					"command": "database.data.import",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == connection",
+					"group": "8_mysql@1"
+				},
+				{
+					"command": "database.connection.delete",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(connection|esConnection|redisConnection|ftpConnection|sshConnection)$/",
+					"group": "10mysql@2"
+				},
+				{
+					"command": "database.database.add",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == connection",
+					"group": "inline@0"
+				},
+				{
+					"command": "database.connection.terminal",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(connection|catalog)$/",
+					"group": "inline@2"
+				},
+				{
+					"command": "database.query.switch",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(connection|catalog|database|esConnection|esIndex)$/",
+					"group": "inline@5"
+				},
+				{
+					"command": "database.query.add",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == queryGroup",
+					"group": "inline@0"
+				},
+				{
+					"command": "database.query.run",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == query",
+					"group": "inline@0"
+				},
+				{
+					"command": "database.template.user",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == userGroup",
+					"group": "1_mysql@1"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == userGroup",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.template.user",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == userGroup",
+					"group": "inline"
+				},
+				{
+					"command": "database.change.user",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == user",
+					"group": "1_mysql@-1"
+				},
+				{
+					"command": "database.user.grant",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == user",
+					"group": "1_mysql@0"
+				},
+				{
+					"command": "database.delete.user",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == user",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.name.copy",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(catalog|user|database|esColumn|column|table|view|esIndex|procedure|function|trigger|mongoTable|redisKey)$/",
+					"group": "-1_mysql@-5"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == database",
+					"group": "3_mysql@0"
+				},
+				{
+					"command": "database.db.truncate",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == database",
+					"group": "4_mysql@4"
+				},
+				{
+					"command": "database.db.drop",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /(database|catalog)/",
+					"group": "4_mysql@5"
+				},
+				{
+					"command": "database.data.export",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == database",
+					"group": "mysql@5"
+				},
+				{
+					"command": "database.struct.export",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == database",
+					"group": "mysql@6"
+				},
+				{
+					"command": "database.document.generate",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == database",
+					"group": "mysql@7"
+				},
+				{
+					"command": "database.data.import",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == database",
+					"group": "mysql@8"
+				},
+				{
+					"command": "database.table.show",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(table|view)$/",
+					"group": "inline@3"
+				},
+				{
+					"command": "database.table.drop",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == table && false",
+					"group": "inline@1"
+				},
+				{
+					"command": "database.table.design",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == table",
+					"group": "1_inline@0"
+				},
+				{
+					"command": "database.template.sql",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == table",
+					"group": "inline@5"
+				},
+				{
+					"command": "database.table.source",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(table)$/",
+					"group": "1_inline@2"
+				},
+				{
+					"command": "database.view.source",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(view)$/",
+					"group": "1_inline@2"
+				},
+				{
+					"command": "database.column.add",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == table",
+					"group": "1_inline@6"
+				},
+				{
+					"command": "database.mock.table",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == table",
+					"group": "1_inline1@1"
+				},
+				{
+					"command": "database.data.export",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(table|view)$/",
+					"group": "1_inline1@2"
+				},
+				{
+					"command": "database.struct.export",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem =~ /^(table|view)$/",
+					"group": "1_inline1@3"
+				},
+				{
+					"command": "database.table.truncate",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == table",
+					"group": "2_mysql@1"
+				},
+				{
+					"command": "database.table.drop",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == table",
+					"group": "2_mysql@2"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == tableGroup",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.template.table",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == tableGroup",
+					"group": "inline"
+				},
+				{
+					"command": "database.column.up",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == column",
+					"group": "inline@0"
+				},
+				{
+					"command": "database.column.down",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == column",
+					"group": "inline@2"
+				},
+				{
+					"command": "database.column.drop",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == column",
+					"group": "3_mysql@1"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == viewGroup",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.template.view",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == viewGroup",
+					"group": "inline"
+				},
+				{
+					"command": "database.delete.view",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == view",
+					"group": "1_mysql@1"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == procedureGroup",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.template.procedure",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == procedureGroup",
+					"group": "inline"
+				},
+				{
+					"command": "database.delete.procedure",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == procedure",
+					"group": "2_mysql@1"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == functionGroup",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.template.function",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == functionGroup",
+					"group": "inline"
+				},
+				{
+					"command": "database.delete.function",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == function",
+					"group": "1_mysql@1"
+				},
+				{
+					"command": "database.refresh",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == triggerGroup",
+					"group": "1_mysql@2"
+				},
+				{
+					"command": "database.template.trigger",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == triggerGroup",
+					"group": "inline"
+				},
+				{
+					"command": "database.delete.trigger",
+					"when": "view =~ /erdosDatabaseClient\\.(explorer|history)/ && viewItem == trigger",
+					"group": "1_mysql@1"
+				},
+				{
+					"command": "database.connection.terminal",
+					"when": "view == erdosDatabaseClient.explorer && viewItem == redisConnection",
+					"group": "inline@1"
+				},
+				{
+					"command": "database.redis.connection.status",
+					"when": "view == erdosDatabaseClient.explorer && viewItem == redisConnection",
+					"group": "connection"
+				},
+				{
+					"command": "database.redis.key.del",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /^(redisKey|redisFolder)$/",
+					"group": "inline"
+				},
+				{
+					"command": "database.connection.delete",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(sshConnection|ftpConnection)/",
+					"group": "inline@0"
+				},
+				{
+					"command": "database.connection.terminal",
+					"when": "view == erdosDatabaseClient.explorer && viewItem == sshConnection",
+					"group": "inline@1"
+				},
+				{
+					"command": "database.ssh.host.copy",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(sshConnection|ftpConnection)/",
+					"group": "0_connection@-2"
+				},
+				{
+					"command": "database.ssh.forward.port",
+					"when": "view == erdosDatabaseClient.explorer && viewItem == sshConnection",
+					"group": "1_nosql@0"
+				},
+				{
+					"command": "database.ssh.socks.port",
+					"when": "view == erdosDatabaseClient.explorer && viewItem == sshConnection",
+					"group": "1_nosql@1"
+				},
+				{
+					"command": "database.ssh.file.new",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(sshConnection|ftpConnection)/",
+					"group": "2_connection@2"
+				},
+				{
+					"command": "database.ssh.folder.new",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(sshConnection|ftpConnection)/",
+					"group": "2_connection@4"
+				},
+				{
+					"command": "database.ssh.path.copy",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(folder|file|link)/",
+					"group": "ssh@1"
+				},
+				{
+					"command": "database.ssh.folder.open",
+					"when": "view == erdosDatabaseClient.explorer && viewItem == folder",
+					"group": "ssh@2"
+				},
+				{
+					"command": "database.ssh.file.new",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(folder|ftpFolder)/",
+					"group": "folder@0"
+				},
+				{
+					"command": "database.ssh.folder.new",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(folder|ftpFolder)/",
+					"group": "folder@1"
+				},
+				{
+					"command": "database.ssh.file.upload",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(folder|ftpFolder)/",
+					"group": "inline@-2"
+				},
+				{
+					"command": "database.ssh.file.delete",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /^(folder|ftpFolder|file|ftpFile|redisFolder)$/",
+					"group": "folder@4"
+				},
+				{
+					"command": "database.ssh.file.download",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(folder|file|ftpFile)/",
+					"group": "file@1"
+				},
+				{
+					"command": "database.ssh.file.download",
+					"when": "view == erdosDatabaseClient.explorer && viewItem =~ /(file|ftpFile)/",
+					"group": "inline@1"
+				},
+				{
+					"command": "database.history.view",
+					"when": "view == erdosDatabaseClient.history && viewItem == historyItem",
+					"group": "1_query@1"
+				},
+				{
+					"command": "database.history.copy",
+					"when": "view == erdosDatabaseClient.history && viewItem == historyItem",
+					"group": "1_query@2"
+				},
+				{
+					"command": "database.history.run",
+					"when": "view == erdosDatabaseClient.history && viewItem == historyItem",
+					"group": "1_query@3"
+				},
+				{
+					"command": "database.history.delete",
+					"when": "view == erdosDatabaseClient.history && viewItem == historyItem",
+					"group": "2_manage@1"
+				}
+			]
+		},
+		"configuration": {
+			"type": "object",
+			"title": "%config.title%",
+			"properties": {
+				"database-client.defaultSelectLimit": {
+					"type": "integer",
+					"default": 100,
+					"description": "%config.defaultSelectLimit%"
+				},
+				"database-client.highlightSQLBlock": {
+					"type": "boolean",
+					"default": false,
+					"description": "Highlight SQL Code block."
+				},
+				"database-client.preferConnectionName": {
+					"type": "boolean",
+					"default": true,
+					"description": "%config.preferConnectionName%"
+				},
+				"database-client.disableSqlCodeLen": {
+					"type": "boolean",
+					"default": false,
+					"description": "Disable Sql Code lens."
+				},
+				"database-client.showUser": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show user on tree view."
+				},
+				"database-client.showView": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show view on tree view."
+				},
+				"database-client.showQuery": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show query on tree view."
+				},
+				"database-client.showProcedure": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show procedure on tree view."
+				},
+				"database-client.showFunction": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show function on tree view."
+				},
+				"database-client.showTrigger": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show trigger on tree view."
+				},
+				"database-client.showHistory": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show query history tree view."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"compile": "npm run compile-extension",
+		"compile-extension": "tsc -p ./",
+		"publich": "vsce publish",
+		"vscode:prepublish": "npm run compile"
+	},
+	"devDependencies": {
+		"@types/bson": "^4.2.4",
+		"@types/ioredis": "^4.22.0",
+		"@types/mongodb": "^3.6.3",
+		"@types/node": "^12.12.6",
+		"@types/pg": "^7.14.7",
+		"@types/redis": "^2.8.18",
+		"@types/ssh2": "^0.5.43",
+		"@types/tedious": "^4.0.3",
+		"@types/vscode": "^1.51.0",
+		"ts-loader": "^7.0.5",
+		"typescript": "^5.9.2"
+	},
+	"dependencies": {
+		"@antv/g2": "^4.2.12",
+		"@exasol/exasol-driver-ts": "^0.3.1",
+		"@types/ws": "^8.18.0",
+		"@xterm/addon-fit": "^0.10.0",
+		"@xterm/addon-search": "^0.15.0",
+		"@xterm/addon-web-links": "^0.11.0",
+		"@xterm/xterm": "^5.5.0",
+		"axios": "^0.21.4",
+		"bson": "^4.7.2",
+		"bufferutil": "^4.0.9",
+		"command-exists": "^1.2.9",
+		"comment-json": "^3.0.3",
+		"compare-versions": "^3.6.0",
+		"date-format": "^3.0.0",
+		"deepmerge": "^3.2.0",
+		"ioredis": "^4.30.1",
+		"json-format-highlight": "^1.0.4",
+		"lodash": "^4.17.20",
+		"lodash.defaults": "^4.1.0",
+		"monaco-editor": "^0.53.0",
+		"mongodb": "^3.7.4",
+		"mysql2": "^2.3.3",
+		"node-xlsx": "^0.24.0",
+		"officegen": "^0.6.5",
+		"pg": "^8.16.3",
+		"portfinder": "^1.0.38",
+		"pretty-bytes": "^5.6.0",
+		"progress-stream": "^2.0.0",
+		"readable-stream": "1.1.x",
+		"routington": "^1.0.3",
+		"sqlstring": "^2.3.3",
+		"ssh2": "^0.5.4",
+		"ssh2-streams": "^0.4.10",
+		"supports-color": "^8.1.1",
+		"tedious": "^18.6.1",
+		"mssql": "^11.0.1",
+		"utf-8-validate": "^6.0.5",
+		"ws": "^8.18.3",
+		"xregexp": "2.0.0"
+	}
+}

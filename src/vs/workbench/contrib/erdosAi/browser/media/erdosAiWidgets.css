@@ -1,0 +1,719 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Main widget container */
+.erdos-ai-widget {
+	display: flex;
+	flex-direction: column;
+	margin: 10px 10px 0 10px; /* Match user messages and input field sides, but remove bottom gap so button stack touches */
+	border: 1px solid var(--vscode-input-border, #cccccc);
+	border-radius: 8px; /* Match user messages and input field */
+    background-color: var(--vscode-textCodeBlock-background);
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	overflow: hidden;
+}
+
+/* Monaco editor containers */
+.erdos-ai-widget .monaco-widget-editor,
+.erdos-ai-widget .console-monaco-editor,
+.erdos-ai-widget .search-replace-monaco-diff {
+	border: none !important;
+	border-radius: 0 !important;
+	width: 100% !important;
+}
+
+.erdos-ai-widget .monaco-widget-editor .monaco-editor,
+.erdos-ai-widget .console-monaco-editor .monaco-editor,
+.erdos-ai-widget .search-replace-monaco-diff .monaco-editor {
+	border-radius: 0;
+	width: 100% !important;
+	background-color: transparent !important;
+}
+
+/* Notebook overlay container - cap height and add scrolling like non-notebook files */
+.erdos-ai-widget .notebookOverlay {
+	max-height: 200px; /* Match non-notebook 10-line cap (10 lines × ~20px) */
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+/* Remove current line border from Monaco editors in AI widgets */
+.erdos-ai-widget .monaco-editor .view-overlays .current-line-exact {
+	border: none !important;
+}
+
+.erdos-ai-widget .monaco-editor .margin-view-overlays .current-line-exact-margin {
+	border: none !important;
+}
+
+/* Diff highlighting styles for Monaco decorations - margin classes only */
+.monaco-editor .diff-margin-added {
+	background-color: rgba(40, 167, 69, 0.2) !important;
+}
+
+.monaco-editor .diff-margin-deleted {
+	background-color: rgba(244, 67, 54, 0.2) !important;
+}
+
+/* Widget collapsed state - rounded bottom corners when content is hidden */
+.erdos-ai-widget.widget-collapsed {
+	border-radius: 8px; /* All corners rounded when collapsed */
+}
+
+/* Widget header - compact like chat headers */
+.erdos-ai-widget .widget-header {
+    background-color: var(--vscode-titleBar-activeBackground);
+    color: var(--vscode-titleBar-activeForeground);
+    padding: 2px 8px;
+    font-family: var(--vscode-font-family);
+    font-size: 12px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--vscode-input-border, #cccccc);
+    line-height: 1.2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    white-space: nowrap; /* Prevent line wrapping */
+    overflow-x: auto; /* Allow horizontal scrolling if necessary */
+}
+
+/* Widget header content area - for title and filename */
+.erdos-ai-widget .widget-header .widget-header-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+/* Clickable widget header */
+.erdos-ai-widget .widget-header.widget-header-clickable,
+.delete-file-widget-custom .delete-file-content.widget-header-clickable {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.erdos-ai-widget .widget-header.widget-header-clickable:hover,
+.delete-file-widget-custom .delete-file-content.widget-header-clickable:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Dark theme hover */
+.vs-dark .erdos-ai-widget .widget-header.widget-header-clickable:hover,
+.vs-dark .delete-file-widget-custom .delete-file-content.widget-header-clickable:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Widget header actions - for clipboard icon */
+.erdos-ai-widget .widget-header .widget-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Clipboard icon button */
+.erdos-ai-widget .widget-header .clipboard-icon {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+    transition: opacity 0.2s, background-color 0.2s;
+}
+
+.erdos-ai-widget .widget-header .clipboard-icon:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.erdos-ai-widget .widget-header .clipboard-icon:active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Expand/contract icon button */
+.erdos-ai-widget .widget-header .expand-contract-icon {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    opacity: 0.7;
+    transition: opacity 0.2s, background-color 0.2s;
+    outline: none; /* Remove blue focus outline */
+}
+
+.erdos-ai-widget .widget-header .expand-contract-icon:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.erdos-ai-widget .widget-header .expand-contract-icon:active {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.erdos-ai-widget .widget-header .expand-contract-icon:focus {
+    outline: none; /* Ensure no focus outline */
+}
+
+/* Widget header diff stats styling */
+.erdos-ai-widget .widget-header .diff-stats {
+    font-family: var(--vscode-font-family);
+    font-size: 12px;
+    font-weight: normal;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.erdos-ai-widget .widget-header .addition {
+    color: #4CAF50 !important;
+    font-weight: normal;
+    display: inline;
+}
+
+.erdos-ai-widget .widget-header .removal {
+    color: #f44336 !important;
+    font-weight: normal;
+    display: inline;
+    margin-left: 4px;
+}
+
+/* Main container with content and buttons side by side */
+.erdos-ai-widget .widget-main-container {
+    display: block;
+}
+
+/* Content area */
+.erdos-ai-widget .widget-content {
+    padding: 8px;
+    background-color: var(--vscode-editor-background);
+    white-space: pre !important; /* Preserve newlines but no wrapping */
+    overflow-x: auto; /* Allow horizontal scrolling if necessary */
+}
+
+/* Force no wrapping for all text elements within widgets */
+.erdos-ai-widget * {
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+}
+
+/* Console/Terminal prompt styling */
+.erdos-ai-widget .console-prompt-container {
+	display: flex;
+	align-items: center;
+	width: 100%;
+}
+
+.erdos-ai-widget .console-prompt-container .console-monaco-editor {
+	flex: 1;
+	min-width: 0; /* Allow flex item to shrink below content size */
+}
+
+.erdos-ai-widget .console-prompt {
+	color: var(--vscode-descriptionForeground);
+	margin-right: 8px;
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	line-height: 1.2;
+	flex-shrink: 0;
+	white-space: nowrap;
+	overflow: visible;
+}
+
+.erdos-ai-widget .console-input {
+	flex: 1;
+	border: none;
+	outline: none;
+	resize: none;
+	background: transparent;
+	color: var(--vscode-textPreformat-foreground);
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	line-height: 1.4;
+	padding: 0;
+	margin: 0;
+	min-height: calc(1.4em * 1);
+	max-height: calc(1.4em * 8);
+	overflow-y: auto;
+	overflow-x: auto;
+	white-space: pre !important; /* Preserve newlines but no wrapping */
+	word-wrap: normal !important; /* Override any word wrapping */
+	overflow-wrap: normal !important; /* Override any overflow wrapping */
+}
+
+/* File content input styling */
+.erdos-ai-widget .file-content-input {
+	width: 100%;
+	min-height: 80px;
+	max-height: 300px;
+	border: none;
+	outline: none;
+	background: transparent;
+	color: var(--vscode-textPreformat-foreground);
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	line-height: 1.4;
+	resize: vertical;
+	padding: 0;
+	margin: 0;
+	white-space: pre !important; /* Preserve newlines but no wrapping */
+	word-wrap: normal !important; /* Override any word wrapping */
+	overflow-wrap: normal !important; /* Override any overflow wrapping */
+	overflow-x: auto;
+	overflow-y: auto;
+}
+
+/* Vertical button stack - RAO style */
+.erdos-ai-widget .widget-button-stack-container,
+.widget-button-stack-container {
+    display: flex;
+    justify-content: flex-end;
+	padding: 0;
+	margin: 0 0 12px 0; /* overall spacing under the stack */
+	margin-left: 17px; /* ensure we don't go too close to left edge */
+}
+
+.erdos-ai-widget .widget-button-stack,
+.widget-button-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    background-color: var(--vscode-input-background, #f5f5f5);
+    border: 1px solid var(--vscode-input-border, #cccccc);
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    overflow: hidden;
+    min-width: 140px; /* minimum width for normal buttons */
+    max-width: calc(100% - 34px); /* allow expansion but respect margins (17px on each side) */
+    width: auto; /* auto-size based on content */
+ 	font-family: var(--vscode-font-family); /* ensure non-code font in button area */
+	margin-right: 17px; /* inset from right edge */
+}
+
+/* Individual buttons in the stack */
+.erdos-ai-widget .widget-button,
+.widget-button {
+    width: 100%;
+    border: none;
+    padding: 4px 8px;
+	font-family: var(--vscode-font-family);
+    font-size: 12px;
+    line-height: 1; /* Tight, no extra vertical spacing */
+	font-weight: normal;
+    cursor: pointer;
+    background: transparent;
+	text-align: left;
+    transition: background-color 0.2s;
+    user-select: none;
+    white-space: normal; /* Allow text wrapping */
+    word-wrap: break-word; /* Break long words if needed */
+    min-height: 20px; /* Ensure minimum height for single-line text */
+    -webkit-user-select: none;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+/* Primary button (Run/Accept) - dark green */
+
+.widget-button-primary {
+	color: #006400 !important;
+	font-weight: normal;
+}
+
+.widget-button-primary:hover {
+	background-color: rgba(0, 100, 0, 0.1);
+}
+
+/* Cancel button - dark red */
+.widget-button-cancel {
+	color: #8b0000 !important;
+	font-weight: normal;
+}
+
+.widget-button-cancel:hover {
+	background-color: rgba(139, 0, 0, 0.1);
+}
+
+/* Allow list button - dark gray */
+.widget-button-allowlist,
+.widget-button-allow-list {
+	color: #666666;
+	font-weight: normal;
+}
+
+.widget-button-allowlist:hover,
+.widget-button-allow-list:hover {
+	background-color: rgba(102, 102, 102, 0.1);
+}
+
+/* Divider between Cancel and Allow List */
+.erdos-ai-widget .widget-button-divider,
+.widget-button-divider {
+    height: 1px;
+    background-color: var(--vscode-input-border, #cccccc);
+    margin: 0;
+    opacity: 0.6;
+}
+
+/* General hover effect for all buttons */
+.erdos-ai-widget .widget-button:active {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Dark theme adjustments */
+.vs-dark .erdos-ai-widget .widget-button-stack {
+	background-color: #3c3c3c;
+}
+
+.vs-dark .erdos-ai-widget .widget-button-primary {
+	color: #006400 !important; /* keep dark green in dark theme */
+}
+
+.vs-dark .erdos-ai-widget .widget-button-cancel {
+	color: #8b0000 !important; /* keep dark red in dark theme */
+}
+
+.vs-dark .erdos-ai-widget .widget-button-allowlist,
+.vs-dark .erdos-ai-widget .widget-button-allow-list {
+	color: #666666; /* keep dark gray in dark theme */
+}
+
+.vs-dark .erdos-ai-widget .widget-button-primary:hover {
+	background-color: rgba(0, 100, 0, 0.15);
+}
+
+.vs-dark .erdos-ai-widget .widget-button-cancel:hover {
+	background-color: rgba(139, 0, 0, 0.15);
+}
+
+.vs-dark .erdos-ai-widget .widget-button-allowlist:hover,
+.vs-dark .erdos-ai-widget .widget-button-allow-list:hover {
+	background-color: rgba(102, 102, 102, 0.15);
+}
+
+/* High contrast theme adjustments */
+.hc-black .erdos-ai-widget,
+.hc-light .erdos-ai-widget {
+	border: 2px solid var(--vscode-contrastBorder);
+}
+
+.hc-black .erdos-ai-widget .widget-button:hover,
+.hc-light .erdos-ai-widget .widget-button:hover {
+	outline: 1px solid var(--vscode-contrastBorder);
+}
+
+/* Focus states for accessibility */
+.erdos-ai-widget .widget-button:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+.erdos-ai-widget .console-input:focus,
+.erdos-ai-widget .file-content-input:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: -1px;
+}
+
+/* Widget type specific styles */
+/* Do not prefix headers with symbols */
+
+
+.diff-filename-header {
+	background-color: var(--vscode-titleBar-activeBackground);
+	color: var(--vscode-titleBar-activeForeground);
+	padding: 2px 8px;
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	font-weight: 600;
+	border-bottom: 1px solid var(--vscode-input-border, #cccccc);
+	line-height: 1.2;
+}
+
+.diff-filename-header .diff-stats {
+	font-family: monospace;
+	font-size: 12px;
+	font-weight: normal;
+	white-space: nowrap;
+	display: inline-block;
+}
+
+.diff-filename-header .addition {
+	color: #4CAF50 !important;
+	font-weight: normal;
+	display: inline;
+}
+
+.diff-filename-header .removal {
+	color: #f44336 !important;
+	font-weight: normal;
+	display: inline;
+	margin-left: 4px;
+}
+
+.diff-editor-container {
+	position: relative;
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+/* Diff content highlighting styles */
+.diff-content-plain {
+	margin: 0;
+	padding: 8px;
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	line-height: 18px;
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-editor-foreground);
+	overflow-y: auto; /* Allow scrolling within the content */
+	max-height: 300px;
+	white-space: pre; /* Preserve newlines but no wrapping */
+	min-width: max-content; /* Expand to content width for parent scrolling */
+}
+
+.diff-content-highlighted {
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	line-height: 18px;
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-editor-foreground);
+	overflow-y: auto; /* Allow scrolling within the content */
+	max-height: 300px;
+	min-width: max-content; /* Expand to content width for parent scrolling */
+	padding: 8px;
+}
+
+.diff-line {
+	display: flex;
+	align-items: flex-start;
+	min-height: 18px;
+	padding: 0;
+	margin: 0;
+	min-width: max-content; /* Ensure line expands to content width */
+}
+
+.diff-line-number {
+	display: inline-block;
+	width: 40px;
+	padding: 0 8px 0 4px;
+	text-align: right;
+	background-color: var(--vscode-editorLineNumber-background, transparent);
+	color: var(--vscode-editorLineNumber-foreground);
+	font-size: 12px;
+	border-right: 1px solid var(--vscode-editorLineNumber-activeForeground, #ccc);
+	user-select: none;
+	-webkit-user-select: none;
+	flex-shrink: 0;
+}
+
+.diff-line-content {
+	flex: 1;
+	padding: 0 8px;
+	white-space: pre; /* Preserve newlines but no wrapping */
+	overflow: visible; /* Remove individual line scrolling */
+	min-width: max-content; /* Ensure content determines width */
+}
+
+.diff-line-added {
+	background-color: rgba(76, 175, 80, 0.2) !important;
+}
+
+.diff-line-deleted {
+	background-color: rgba(244, 67, 54, 0.2) !important;
+}
+
+.diff-line-unchanged {
+	background-color: transparent;
+}
+
+.monaco-editor .diff-glyph-added {
+	background-color: #28a745 !important;
+	width: 3px !important;
+}
+
+.monaco-editor .diff-glyph-deleted {
+	background-color: #dc3545 !important;
+	width: 3px !important;
+}
+
+.diff-editor-textarea {
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-editor-foreground);
+	border: 1px solid var(--vscode-input-border, #ccc);
+}
+
+/* Dark theme support for diff highlighting */
+.vs-dark .diff-line-added {
+	background-color: rgba(76, 175, 80, 0.15) !important;
+}
+
+.vs-dark .diff-line-deleted {
+	background-color: rgba(244, 67, 54, 0.15) !important;
+}
+
+.vs-dark .diff-line-added-gutter {
+	background-color: rgba(76, 175, 80, 0.2) !important;
+}
+
+.vs-dark .diff-line-deleted-gutter {
+	background-color: rgba(244, 67, 54, 0.2) !important;
+}
+
+
+/* High contrast theme support */
+.hc-black .diff-line-added,
+.hc-light .diff-line-added {
+	background-color: rgba(76, 175, 80, 0.4) !important;
+}
+
+.hc-black .diff-line-deleted,
+.hc-light .diff-line-deleted {
+	background-color: rgba(244, 67, 54, 0.4) !important;
+}
+
+
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 600px) {
+	.erdos-ai-widget .widget-button-stack {
+		min-width: 100px; /* smaller minimum width on mobile */
+		max-width: calc(100% - 20px); /* tighter margins on mobile */
+	}
+	
+	.erdos-ai-widget .widget-button {
+		font-size: 12px;
+		padding: 4px 6px;
+	}
+	
+	.diff-filename-header {
+		font-size: 11px;
+		padding: 2px 6px;
+	}
+	
+	.diff-filename-header .diff-stats {
+		font-size: 12px;
+	}
+	
+}
+
+/* Delete file widget - custom single rounded rectangle design */
+.delete-file-widget-custom {
+	margin: 10px; /* Match user messages and input field - 10px from pane edges */
+	border: 1px solid var(--vscode-input-border, #cccccc); /* Match other widgets */
+	border-radius: 8px; /* Match user messages and input field */
+	overflow: hidden;
+}
+
+.delete-file-widget-custom .delete-file-content {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px; /* Spacing of the under-section */
+	background-color: var(--vscode-titleBar-activeBackground);
+	color: var(--vscode-titleBar-activeForeground);
+	font-family: var(--vscode-font-family);
+	font-size: 12px;
+	line-height: 1.4;
+	border-radius: 8px; /* Rounded rectangle */
+}
+
+.delete-file-widget-custom .delete-file-text {
+	flex: 1;
+	font-weight: 600;
+}
+
+.delete-file-widget-custom .delete-file-buttons {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.delete-file-widget-custom .delete-file-btn {
+	padding: 4px;
+	border: none;
+	cursor: pointer;
+	font-size: 16px;
+	background: transparent;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: opacity 0.2s;
+}
+
+.delete-file-widget-custom .delete-file-btn-primary {
+	color: #228B22;
+}
+
+.delete-file-widget-custom .delete-file-btn-primary:hover {
+	opacity: 0.7;
+}
+
+.delete-file-widget-custom .delete-file-btn-cancel {
+	color: #dc3545;
+}
+
+.delete-file-widget-custom .delete-file-btn-cancel:hover {
+	opacity: 0.7;
+}
+
+
+
+/* Dark theme adjustments */
+.vs-dark .delete-file-widget-custom .delete-file-btn-primary {
+	color: #4CAF50;
+}
+
+.vs-dark .delete-file-widget-custom .delete-file-btn-cancel {
+	color: #f44336;
+}
+
+/* Auto-accept highlighting styles */
+.monaco-editor .erdos-ai-auto-accept-added {
+	background-color: rgba(40, 167, 69, 0.2) !important;
+}
+
+.monaco-editor .erdos-ai-auto-accept-deleted {
+	background-color: rgba(220, 53, 69, 0.2) !important;
+}
+
+.monaco-editor .erdos-ai-auto-accept-glyph-added {
+	background-color: #28a745 !important;
+	width: 3px !important;
+}
+
+.monaco-editor .erdos-ai-auto-accept-glyph-deleted {
+	background-color: #dc3545 !important;
+	width: 3px !important;
+}
+
+/* Dark theme support for auto-accept highlighting */
+.vs-dark .monaco-editor .erdos-ai-auto-accept-added {
+	background-color: rgba(76, 175, 80, 0.15) !important;
+}
+
+.vs-dark .monaco-editor .erdos-ai-auto-accept-deleted {
+	background-color: rgba(244, 67, 54, 0.15) !important;
+}
+
+.vs-dark .monaco-editor .erdos-ai-auto-accept-glyph-added {
+	background-color: #4CAF50 !important;
+}
+
+.vs-dark .monaco-editor .erdos-ai-auto-accept-glyph-deleted {
+	background-color: #f44336 !important;
+}

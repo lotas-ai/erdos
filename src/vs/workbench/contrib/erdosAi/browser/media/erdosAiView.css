@@ -1,0 +1,1237 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* Main container following Rao streaming panel patterns */
+.erdos-ai-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background-color: var(--vscode-sideBar-background);
+	position: relative;
+}
+
+/* Message list area following Rao streaming panel */
+.erdos-ai-messages {
+	flex: 1;
+	overflow-y: auto;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+	user-select: text;
+	-webkit-user-select: text;
+	padding-bottom: 64px;
+}
+
+/* User message styling - match input-container exactly with reserved space for revert button */
+.erdos-ai-message.user {
+	box-sizing: border-box;
+	cursor: text;
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, #e0e0e0);
+	border-radius: 8px;
+	padding: 6px 22px 6px 6px; /* 16px reserved space + 6px original padding on right */
+	margin: 10px;
+	position: relative;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--vscode-input-foreground);
+	word-wrap: break-word;
+	text-align: left;
+}
+
+.erdos-ai-message.user:hover {
+	cursor: text;
+}
+
+
+
+/* Revert icon styling - VSCode discard codicon, positioned within the 16px reserved space */
+.erdos-ai-revert-icon {
+	position: absolute;
+	bottom: 6px; /* Position 4px higher from bottom right within the message */
+	right: 8px; /* 8px from edge, within the 16px reserved space (22px padding - 6px original = 16px reserved) */
+	width: 14px;
+	height: 14px;
+	cursor: pointer;
+	pointer-events: auto;
+	z-index: 999;
+	/* No hover effects, borders, or shading as requested */
+}
+
+.erdos-ai-revert-icon span {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+
+/* User message editing styles - transform to look like search input container with reserved space */
+.erdos-ai-message.user.editing {
+	/* Remove line clamping when editing to allow full scrolling */
+	max-height: none;
+	overflow: visible;
+	display: block;
+	mask-image: none;
+	-webkit-mask-image: none;
+	/* Match search input container exactly */
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, #e0e0e0);
+	border-radius: 8px;
+	padding: 6px 22px 6px 6px; /* Match user message padding with reserved space */
+	outline: none !important;
+	box-shadow: none !important;
+	cursor: text;
+}
+
+/* User message content in display mode - show up to 3 lines with 4th faded */
+.erdos-ai-message.user:not(.editing) .erdos-ai-message-content {
+	cursor: pointer;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	position: relative;
+	/* Use flexbox layout but allow natural height for short content */
+	display: block;
+	/* Apply line clamping only when content would exceed 4 lines */
+	overflow: hidden;
+}
+
+/* Apply webkit-box line clamping only when content actually needs clamping */
+.erdos-ai-message.user:not(.editing) .erdos-ai-message-content[data-clamped="true"] {
+	display: -webkit-box;
+	line-clamp: 4;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	max-height: calc(1.4em * 4);
+}
+
+/* Assistant message content - no line clamping */
+.erdos-ai-message.assistant .erdos-ai-message-content {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+/* Fade overlay for user message text content only - only when content exceeds 4 lines */
+.erdos-ai-message.user .erdos-ai-message-content::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: calc(1.4em * 1); /* Height of one line for fade effect */
+	background: linear-gradient(to bottom, transparent 0%, var(--vscode-input-background) 100%);
+	pointer-events: none;
+	/* Only show fade when content is clamped (height reaches max) */
+	display: none;
+}
+
+/* Show fade only when message content is actually being clamped */
+.erdos-ai-message.user:not(.editing) .erdos-ai-message-content[data-clamped="true"]::after {
+	display: block;
+}
+
+.erdos-ai-message-edit-textarea {
+	/* Match search input textarea exactly */
+	flex: 1;
+	border: none;
+	background: transparent;
+	color: var(--vscode-input-foreground);
+	font-family: var(--vscode-font-family);
+	font-size: 13px;
+	line-height: 1.4;
+	resize: none;
+	overflow-y: auto;
+	min-height: 18.2px; /* One line height (13px * 1.4) */
+	max-height: 120px; /* Up to scroll limit */
+	padding: 0;
+	width: 100%;
+	outline: none !important;
+	box-shadow: none !important;
+	box-sizing: border-box;
+}
+
+.erdos-ai-message-edit-textarea::placeholder {
+	color: var(--vscode-input-placeholderForeground);
+}
+
+/* Assistant message styling - following Erdos streaming */
+.erdos-ai-message.assistant {
+	background-color: transparent;
+	text-align: left;
+	word-wrap: break-word;
+	max-width: 100%;
+	position: relative;
+	clear: both;
+	padding: 12px 16px;
+	margin-bottom: 0;
+	font-size: 14px;
+	line-height: 1.4;
+	color: var(--vscode-foreground);
+}
+
+/* File Changes Bar - positioned above MessageInput with 8px additional inset */
+.erdos-ai-file-changes-bar {
+	margin: 0px 18px 0px 18px; /* 18px = 10px (MessageInput margin) + 8px (additional inset), no bottom margin - sits right on input container */
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, #e0e0e0);
+	border-bottom: none; /* Remove bottom border to merge with input container */
+	border-radius: 6px 6px 0px 0px; /* Top corners rounded, bottom corners square to connect with input container */
+	overflow: hidden;
+	font-size: 12px;
+}
+
+/* Hidden state - invisible and non-interactive but maintains exact same layout space */
+.erdos-ai-file-changes-bar.hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.erdos-ai-file-changes-bar .file-changes-header {
+	display: flex;
+	align-items: center;
+	padding: 3px 8px; /* 25% shorter than previous 4px -> 3px */
+	cursor: pointer;
+	background-color: var(--vscode-input-background);
+	color: var(--vscode-foreground);
+	user-select: none;
+	transition: background-color 0.15s ease;
+	height: auto;
+}
+
+.erdos-ai-file-changes-bar .file-changes-header:hover {
+	background-color: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+}
+
+.erdos-ai-file-changes-bar .file-changes-header .codicon {
+	margin-right: 6px;
+	font-size: 11px;
+	color: var(--vscode-input-placeholderForeground);
+}
+
+
+.erdos-ai-file-changes-bar .file-changes-list {
+	border-top: 1px solid var(--vscode-input-border, #e0e0e0);
+	background-color: var(--vscode-input-background);
+	max-height: 105px; /* 25% shorter than previous 140px -> 105px */
+	overflow-y: auto;
+}
+
+.erdos-ai-file-changes-bar .file-changes-item {
+	display: flex;
+	align-items: center;
+	padding: 2px 8px 2px 20px; /* 25% shorter than previous 3px -> 2px */
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	gap: 6px;
+	height: auto;
+}
+
+.erdos-ai-file-changes-bar .file-changes-item:hover {
+	background-color: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+}
+
+
+/* Monaco icon styling for file changes bar - match context items exactly */
+.erdos-ai-file-changes-bar .context-item-icon {
+	margin-right: 1px;
+	flex-shrink: 0;
+	position: relative;
+	top: 0px;
+	width: 16px;
+	height: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	transition: opacity 0.2s ease;
+}
+
+.erdos-ai-file-changes-bar .context-item-icon .monaco-icon-label {
+	display: flex;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 16px;
+	min-width: 16px;
+	font-size: 16px;
+}
+
+.erdos-ai-file-changes-bar .context-item-icon .monaco-icon-label::before {
+	/* File icons rendered as background image - same as VSCode */
+	background-size: 16px;
+	background-position: left center;
+	background-repeat: no-repeat;
+	padding-right: 0; /* No padding since we don't show text */
+	width: 16px;
+	height: 16px;
+	line-height: inherit !important;
+	display: inline-block;
+	
+	/* Position adjustment: pull icon left to reduce space, like context items */
+	position: relative;
+	left: -4px;
+	top: 0px;
+	
+	/* Font icons support */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	vertical-align: top;
+	flex-shrink: 0;
+}
+
+.erdos-ai-file-changes-bar .monaco-icon-label .label-name {
+	display: none; /* Hide the file name from the icon, we show it separately */
+}
+
+.erdos-ai-file-changes-bar .file-changes-item .file-name {
+	flex: 1;
+	color: var(--vscode-foreground);
+	font-weight: 400;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+}
+
+.erdos-ai-file-changes-bar .file-changes-item .file-changes-stats {
+	display: flex;
+	gap: 4px;
+	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 500;
+}
+
+.erdos-ai-file-changes-bar .file-changes-item .added-lines {
+	color: #28a745;
+}
+
+.erdos-ai-file-changes-bar .file-changes-item .deleted-lines {
+	color: #dc3545;
+}
+
+/* Input area following Erdos assistant patterns */
+.erdos-ai-input-part {
+	margin: 0px 10px;
+	padding: 0px 0 12px 0px; /* Remove top padding to eliminate gap with FileChangesBar */
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
+/* When FileChangesBar is present, remove top padding completely */
+.erdos-ai-file-changes-bar + .erdos-ai-input-part {
+	padding-top: 0px;
+}
+
+.erdos-ai-input-and-side-toolbar {
+	display: flex;
+	gap: 0;
+	align-items: center;
+	position: relative;
+}
+
+.erdos-ai-input-container {
+	box-sizing: border-box;
+	cursor: text;
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, #e0e0e0);
+	border-radius: 8px;
+	padding: 6px;
+	max-width: 100%;
+	flex: 1;
+}
+
+/* Override any focus styling that might come from VS Code global styles */
+.erdos-ai-input-container,
+.erdos-ai-input-container:focus,
+.erdos-ai-input-container:focus-within,
+.erdos-ai-input-container *,
+.erdos-ai-input-container *:focus,
+.erdos-ai-input-container textarea,
+.erdos-ai-input-container textarea:focus,
+.erdos-ai-input,
+.erdos-ai-input:focus {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+/* Specifically prevent focus border color changes */
+.erdos-ai-input-container:focus,
+.erdos-ai-input-container:focus-within {
+	border-color: var(--vscode-input-border, #e0e0e0) !important;
+}
+
+
+
+.erdos-ai-editor-container {
+	position: relative;
+}
+
+.erdos-ai-input {
+	flex: 1;
+	border: none;
+	background: transparent;
+	color: var(--vscode-input-foreground);
+	font-family: var(--vscode-font-family);
+	font-size: 13px;
+	line-height: 1.4;
+	resize: none;
+	overflow-y: auto;
+	min-height: 20px;
+	max-height: 120px;
+	padding: 0;
+	width: 100%;
+}
+
+.erdos-ai-input::placeholder {
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.erdos-ai-input-toolbars {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+	padding-top: 0;
+}
+
+.erdos-ai-input-toolbars > :first-child {
+	margin-right: auto;
+}
+
+.erdos-ai-send-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--vscode-icon-foreground);
+	font-size: 16px;
+	padding: 6px;
+	border-radius: 2px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+}
+
+.erdos-ai-send-button:hover:not(:disabled) {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.erdos-ai-send-button:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+/* Auto-accept floating bar */
+.erdos-ai-auto-accept-floating-bar {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	pointer-events: auto;
+	max-width: 600px;
+}
+
+.erdos-ai-auto-accept-main-section {
+	display: flex;
+	align-items: center;
+	gap: 0px;
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, #e0e0e0);
+	border-radius: 4px;
+	padding: 6px 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	font-size: 12px;
+	flex: 1;
+}
+
+.erdos-ai-auto-accept-file-section {
+	display: flex;
+	align-items: center;
+	gap: 0px;
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, #e0e0e0);
+	border-radius: 4px;
+	padding: 6px 12px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	font-size: 12px;
+}
+
+.erdos-ai-auto-accept-nav-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--vscode-icon-foreground);
+	padding: 2px;
+	border-radius: 2px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+}
+
+.erdos-ai-auto-accept-nav-button:hover {
+	background: none !important;
+}
+
+.erdos-ai-auto-accept-nav-button:active {
+	background: none !important;
+}
+
+.erdos-ai-auto-accept-nav-button:focus {
+	background: none !important;
+}
+
+.erdos-ai-auto-accept-counter {
+	color: var(--vscode-foreground);
+	font-size: 12px;
+	min-width: 40px;
+	text-align: center;
+}
+
+.erdos-ai-auto-accept-actions {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.erdos-ai-auto-accept-undo-button {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--vscode-foreground);
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 2px;
+}
+
+.erdos-ai-auto-accept-undo-button:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.erdos-ai-auto-accept-keep-button {
+	background-color: var(--vscode-button-background);
+	border: none;
+	cursor: pointer;
+	color: var(--vscode-button-foreground) !important;
+	font-size: 12px;
+	padding: 4px 8px;
+	border-radius: 2px;
+}
+
+.erdos-ai-auto-accept-keep-button:hover {
+	background-color: var(--vscode-button-hoverBackground);
+}
+
+/* Review next file button - full rectangle styling */
+.erdos-ai-auto-accept-review-file-button {
+	display: flex;
+	align-items: center;
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, #e0e0e0);
+	border-radius: 4px;
+	padding: 8px 12px;
+	cursor: pointer;
+	font-size: 12px;
+	color: var(--vscode-foreground);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.erdos-ai-auto-accept-review-file-button:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.erdos-ai-stop-button {
+	background: none;
+	border: 1px solid var(--vscode-icon-foreground);
+	border-radius: 50%;
+	cursor: pointer;
+	color: var(--vscode-icon-foreground);
+	font-size: 12px;
+	padding: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	transition: all 0.15s ease;
+}
+
+.erdos-ai-stop-button:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
+	border-color: var(--vscode-foreground);
+}
+
+
+/* Welcome section styling */
+.erdos-ai-welcome {
+	text-align: center;
+	padding: 40px 20px;
+	color: var(--vscode-descriptionForeground);
+	max-width: 500px;
+	margin: 0 auto;
+}
+
+.erdos-ai-welcome h3 {
+	margin: 0 0 16px 0;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--vscode-foreground);
+}
+
+.erdos-ai-welcome p {
+	margin: 0 0 8px 0;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+
+
+
+.erdos-ai-thinking-text {
+	color: var(--vscode-descriptionForeground);
+	font-style: italic;
+	opacity: 0.7;
+}
+
+.erdos-ai-thinking-dots {
+	color: var(--vscode-descriptionForeground);
+	font-style: italic;
+	opacity: 0.7;
+}
+
+.erdos-ai-thinking-dots::after {
+	content: '';
+	animation: thinking-dots 1.5s infinite;
+}
+
+@keyframes thinking-dots {
+	0%, 20% { content: ''; }
+	40% { content: '.'; }
+	60% { content: '..'; }
+	80%, 100% { content: '...'; }
+}
+
+
+/* Function call styling following VS Code code block patterns */
+.erdos-ai-function-call {
+	margin-top: 12px;
+	padding: 12px;
+	background-color: var(--vscode-textCodeBlock-background);
+	border: 1px solid var(--vscode-textBlockQuote-border);
+	border-radius: 4px;
+	font-family: var(--vscode-editor-font-family);
+	font-size: 12px;
+	border-left: 4px solid var(--vscode-textBlockQuote-border);
+}
+
+.erdos-ai-function-call strong {
+	color: var(--vscode-textPreformat-foreground);
+	font-weight: 600;
+	margin-bottom: 8px;
+	display: block;
+}
+
+.erdos-ai-function-call pre {
+	margin: 8px 0 0 0;
+	padding: 0;
+	background: none;
+	border: none;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	color: var(--vscode-textPreformat-foreground);
+	line-height: 1.4;
+}
+
+/* Function call message styling */
+.erdos-ai-function-call-message {
+	color: var(--vscode-descriptionForeground);
+	font-style: italic;
+	margin: 8px 0;
+	padding-left: 16px;
+}
+
+
+
+
+
+/* History Dropdown - Using Erdos's DropDownListBox design */
+.erdos-ai-history-dropdown {
+	position: fixed;
+	background: var(--vscode-erdosDropDownListBox-background);
+	border: 1px solid var(--vscode-erdosDropDownListBox-border);
+	border-radius: 4px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	z-index: 2000;
+	min-width: 280px;
+	max-width: 380px;
+	max-height: 400px;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.erdos-ai-history-header {
+	padding: 4px;
+	border-bottom: 1px solid var(--vscode-erdosDropDownListBox-separatorBackground);
+	background: var(--vscode-erdosDropDownListBox-background);
+}
+
+.erdos-ai-history-search {
+	width: 100%;
+	height: 22px;
+	padding: 0 6px;
+	border: 1px solid var(--vscode-erdosActionBar-selectBorder);
+	border-radius: 4px;
+	background: var(--vscode-erdosActionBar-selectBoxBackground);
+	color: var(--vscode-erdosActionBar-foreground);
+	font-size: 13px;
+	font-family: var(--vscode-font-family);
+	box-sizing: border-box;
+}
+
+.erdos-ai-history-search:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	background: var(--vscode-erdosActionBar-hoverBackground);
+}
+
+.erdos-ai-history-search::placeholder {
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.erdos-ai-history-list {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	background: var(--vscode-erdosDropDownListBox-background);
+	max-height: 320px;
+	overflow-y: auto;
+}
+
+/* Override history item styles for dropdown context */
+.erdos-ai-history-dropdown .erdos-ai-history-item {
+	border: none;
+	display: grid;
+	align-content: center;
+	background: transparent;
+	color: var(--vscode-erdosDropDownListBox-foreground);
+	grid-template-columns: [name] 1fr [date] auto [end];
+	border-radius: 0;
+	margin: 0;
+	padding: 4px 8px;
+	position: relative;
+	transition: none;
+}
+
+.erdos-ai-history-dropdown .erdos-ai-history-item:hover {
+	color: var(--vscode-erdosDropDownListBox-hoverForeground);
+	background: var(--vscode-erdosDropDownListBox-hoverBackground);
+}
+
+.erdos-ai-history-item:focus {
+	outline: none;
+}
+
+.erdos-ai-history-item:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+	background: var(--vscode-erdosDropDownListBox-hoverBackground);
+}
+
+.erdos-ai-history-dropdown .erdos-ai-history-name {
+	grid-column: name / date;
+	font-size: 13px;
+	color: inherit;
+	font-weight: normal;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: normal;
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+
+.erdos-ai-history-dropdown .erdos-ai-history-date {
+	grid-column: date / end;
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground);
+	white-space: nowrap;
+	opacity: 0.8;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	min-width: 0;
+	transition: opacity 0.1s ease;
+}
+
+.erdos-ai-history-actions {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px;
+	opacity: 0;
+	transition: opacity 0.1s ease;
+	background: var(--vscode-erdosDropDownListBox-hoverBackground);
+	border-radius: 3px;
+}
+
+.erdos-ai-history-dropdown .erdos-ai-history-item:hover .erdos-ai-history-date {
+	opacity: 0.3;
+}
+
+.erdos-ai-history-dropdown .erdos-ai-history-item:hover .erdos-ai-history-actions {
+	opacity: 1;
+}
+
+.erdos-ai-history-action-btn {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: var(--vscode-icon-foreground);
+	font-size: 12px;
+	padding: 2px;
+	border-radius: 2px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	transition: background-color 0.1s ease;
+}
+
+.erdos-ai-history-action-btn:hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
+}
+
+.erdos-ai-history-delete-btn:hover {
+	background-color: var(--vscode-inputValidation-errorBackground);
+	color: var(--vscode-inputValidation-errorForeground);
+}
+
+.erdos-ai-history-edit-input {
+	width: 100%;
+	height: 22px;
+	padding: 0 6px;
+	border: 1px solid var(--vscode-focusBorder);
+	border-radius: 4px;
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	font-size: 13px;
+	font-family: var(--vscode-font-family);
+	font-weight: normal;
+	box-sizing: border-box;
+}
+
+.erdos-ai-history-edit-input:focus {
+	outline: none;
+}
+
+.erdos-ai-history-loading,
+.erdos-ai-history-empty {
+	color: var(--vscode-descriptionForeground);
+	font-size: 13px;
+	font-style: italic;
+	text-align: center;
+	padding: 8px;
+	cursor: default;
+	height: 26px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.erdos-ai-history-loading:hover,
+.erdos-ai-history-empty:hover {
+	background-color: transparent;
+}
+
+/* Footer for delete all button */
+.erdos-ai-history-footer {
+	border-top: 1px solid var(--vscode-erdosDropDownListBox-separatorBackground);
+	padding: 0;
+	background: var(--vscode-erdosDropDownListBox-background);
+}
+
+.erdos-ai-history-delete-all-btn {
+	width: 100%;
+	height: 26px;
+	padding: 0 8px;
+	border: none;
+	border-radius: 0;
+	background: transparent;
+	color: #800000;
+	font-size: 12px;
+	font-family: var(--vscode-font-family);
+	cursor: pointer;
+	transition: all 0.1s ease;
+	text-align: center;
+	outline: none;
+}
+
+.erdos-ai-history-delete-all-btn:hover {
+	background: var(--vscode-inputValidation-errorBackground);
+}
+
+.erdos-ai-history-delete-all-btn:active {
+	background: var(--vscode-inputValidation-errorBackground);
+	opacity: 0.8;
+}
+
+.erdos-ai-history-delete-all-btn:focus {
+	outline: none;
+}
+
+/* Markdown content styling - following VS Code chat patterns */
+.erdos-ai-markdown {
+	line-height: 1.6;
+	font-size: 14px;
+}
+
+.erdos-ai-markdown h1,
+.erdos-ai-markdown h2,
+.erdos-ai-markdown h3,
+.erdos-ai-markdown h4,
+.erdos-ai-markdown h5,
+.erdos-ai-markdown h6 {
+	font-weight: 600;
+	margin: 16px 0 8px 0;
+	color: var(--vscode-foreground);
+	line-height: 1.4;
+}
+
+.erdos-ai-markdown h1 {
+	font-size: 20px;
+	border-bottom: 1px solid var(--vscode-textSeparator-foreground);
+	padding-bottom: 8px;
+}
+
+.erdos-ai-markdown h2 {
+	font-size: 18px;
+}
+
+.erdos-ai-markdown h3 {
+	font-size: 16px;
+}
+
+.erdos-ai-markdown h4 {
+	font-size: 14px;
+}
+
+.erdos-ai-markdown h5,
+.erdos-ai-markdown h6 {
+	font-size: 13px;
+}
+
+.erdos-ai-markdown p {
+	margin: 8px 0;
+	color: var(--vscode-foreground);
+	line-height: 1.6;
+}
+
+.erdos-ai-markdown strong,
+.erdos-ai-markdown b {
+	font-weight: 600;
+	color: var(--vscode-foreground);
+}
+
+.erdos-ai-markdown em,
+.erdos-ai-markdown i {
+	font-style: italic;
+}
+
+.erdos-ai-markdown code {
+	background-color: var(--vscode-textCodeBlock-background);
+	color: var(--vscode-textPreformat-foreground);
+	padding: 2px 4px;
+	border-radius: 3px;
+	font-family: var(--vscode-editor-font-family);
+	font-size: 0.9em;
+	border: 1px solid var(--vscode-textBlockQuote-border);
+}
+
+.erdos-ai-markdown pre {
+	background-color: var(--vscode-textCodeBlock-background);
+	border: 1px solid var(--vscode-textBlockQuote-border);
+	border-radius: 4px;
+	padding: 12px;
+	margin: 12px 0;
+	overflow-x: auto;
+	font-family: var(--vscode-editor-font-family);
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.erdos-ai-markdown pre code {
+	background: none;
+	border: none;
+	padding: 0;
+	font-size: inherit;
+	color: var(--vscode-textPreformat-foreground);
+}
+
+/* Custom code block styling for ErdosAI rendered code blocks */
+.erdos-ai-code-block {
+	background-color: var(--vscode-textCodeBlock-background) !important;
+	border: 1px solid var(--vscode-textBlockQuote-border) !important;
+	border-radius: 4px !important;
+	padding: 12px !important;
+	margin: 12px 0 !important;
+	overflow-x: auto !important;
+	font-family: var(--vscode-editor-font-family) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+.erdos-ai-code-block code {
+	background: none !important;
+	border: none !important;
+	padding: 0 !important;
+	font-size: inherit !important;
+	color: var(--vscode-textPreformat-foreground) !important;
+	font-family: inherit !important;
+}
+
+.erdos-ai-markdown blockquote {
+	margin: 12px 0;
+	padding: 8px 12px;
+	border-left: 4px solid var(--vscode-textBlockQuote-border);
+	background-color: var(--vscode-textBlockQuote-background);
+	color: var(--vscode-foreground);
+	font-style: italic;
+}
+
+.erdos-ai-markdown ul,
+.erdos-ai-markdown ol {
+	margin: 8px 0;
+	padding-left: 24px;
+	color: var(--vscode-foreground);
+}
+
+.erdos-ai-markdown li {
+	margin: 4px 0;
+	line-height: 1.6;
+}
+
+.erdos-ai-markdown ul ul,
+.erdos-ai-markdown ol ol,
+.erdos-ai-markdown ul ol,
+.erdos-ai-markdown ol ul {
+	margin: 4px 0;
+}
+
+.erdos-ai-markdown a {
+	color: var(--vscode-textLink-foreground);
+	text-decoration: none;
+}
+
+.erdos-ai-markdown a:hover {
+	text-decoration: underline;
+	color: var(--vscode-textLink-activeForeground);
+}
+
+/* Code links should not have underlines */
+.erdos-ai-markdown a[data-href^="command:erdosAi.openFile"] {
+	text-decoration: none !important;
+}
+
+.erdos-ai-markdown a[data-href^="command:erdosAi.openFile"]:hover {
+	text-decoration: none !important;
+}
+
+.erdos-ai-markdown table {
+	border-collapse: collapse;
+	margin: 12px 0;
+	width: 100%;
+	border: 1px solid var(--vscode-textBlockQuote-border);
+}
+
+.erdos-ai-markdown th,
+.erdos-ai-markdown td {
+	border: 1px solid var(--vscode-textBlockQuote-border);
+	padding: 8px 12px;
+	text-align: left;
+}
+
+.erdos-ai-markdown th {
+	background-color: var(--vscode-textCodeBlock-background);
+	font-weight: 600;
+	color: var(--vscode-foreground);
+}
+
+.erdos-ai-markdown td {
+	color: var(--vscode-foreground);
+}
+
+.erdos-ai-markdown hr {
+	border: none;
+	border-top: 1px solid var(--vscode-textSeparator-foreground);
+	margin: 16px 0;
+}
+
+.erdos-ai-markdown img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 4px;
+	margin: 8px 0;
+}
+
+
+
+/* Error and fallback styling */
+.erdos-ai-markdown-error {
+	background-color: var(--vscode-inputValidation-errorBackground);
+	color: var(--vscode-inputValidation-errorForeground);
+	border: 1px solid var(--vscode-inputValidation-errorBorder);
+	border-radius: 4px;
+	padding: 8px 12px;
+	margin: 8px 0;
+	font-size: 12px;
+}
+
+.erdos-ai-markdown-fallback {
+	background-color: var(--vscode-textCodeBlock-background);
+	border: 1px solid var(--vscode-textBlockQuote-border);
+	border-radius: 4px;
+	padding: 12px;
+	margin: 8px 0;
+	font-family: var(--vscode-editor-font-family);
+	font-size: 13px;
+	white-space: pre-wrap;
+	color: var(--vscode-textPreformat-foreground);
+}
+
+
+
+/* Thinking content styling using em with specific class */
+em.erdos-ai-thinking {
+	color: var(--vscode-descriptionForeground) !important;
+	font-style: italic;
+	font-size: calc(1em - 2px);
+	opacity: 0.8;
+}
+
+/* Thinking content in VS Code's rendered markdown */
+.rendered-markdown em {
+	font-size: calc(1em - 2px) !important;
+}
+
+/* Ensure proper spacing for markdown content within message containers */
+.erdos-ai-message-content {
+	width: 100%;
+}
+
+.erdos-ai-message-content > .erdos-ai-markdown > :first-child {
+	margin-top: 0;
+}
+
+.erdos-ai-message-content > .erdos-ai-markdown > :last-child {
+	margin-bottom: 0;
+}
+
+/* Drag and drop styling for editor tabs - use existing light blue highlighting */
+.erdos-ai-input-part.drag-over {
+	background-color: var(--vscode-editor-dragAndDropBackground);
+}
+
+/* Mode toggle styling */
+.mode-toggle-container {
+	position: relative;
+	display: inline-block;
+	background-color: var(--vscode-sideBar-background);
+	border-radius: 8px;
+	padding: 2px 4px;
+}
+
+.mode-toggle-button {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	background: transparent;
+	border: none;
+	color: var(--vscode-input-placeholderForeground);
+	cursor: pointer;
+	padding: 2px 4px;
+	border-radius: 4px;
+	font-size: 12px;
+	line-height: 1;
+}
+
+
+.mode-toggle-button:focus {
+	outline: 1px solid var(--vscode-focusBorder);
+	outline-offset: 1px;
+}
+
+.mode-label-text {
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--vscode-input-placeholderForeground);
+}
+
+.mode-toggle-dropdown {
+	position: absolute;
+	bottom: 100%;
+	right: 0;
+	background-color: var(--vscode-dropdown-background);
+	border: 1px solid var(--vscode-dropdown-border);
+	border-radius: 4px;
+	box-shadow: var(--vscode-widget-shadow) 0px 2px 8px;
+	z-index: 1000;
+	min-width: 100px;
+	margin-bottom: 4px;
+}
+
+.mode-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	background: transparent;
+	border: none;
+	color: var(--vscode-dropdown-foreground);
+	cursor: pointer;
+	padding: 4px 12px;
+	font-size: 12px;
+	line-height: 1.2;
+	text-align: left;
+	transition: background-color 0.2s ease;
+}
+
+.mode-option:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.mode-option:focus {
+	background-color: var(--vscode-list-focusBackground);
+	outline: none;
+}
+
+.mode-option.active {
+	background-color: var(--vscode-list-activeSelectionBackground);
+	color: var(--vscode-list-activeSelectionForeground);
+}
+
+.mode-option .codicon {
+	font-size: 16px;
+	flex-shrink: 0;
+}
+
+.mode-label {
+	flex: 1;
+	font-weight: 400;
+}
+
+/* Mode toggle wrapper styling to match image attachment wrapper */
+.mode-toggle-wrapper {
+	display: flex;
+	align-items: center;
+}
+
+/* Image attachment wrapper styling to match Ask/Agent toggle */
+.image-attachment-wrapper {
+	background-color: var(--vscode-sideBar-background);
+	border-radius: 8px;
+	padding: 2px 4px;
+	display: flex;
+	align-items: center;
+}

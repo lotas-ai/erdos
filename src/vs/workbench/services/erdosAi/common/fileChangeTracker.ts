@@ -1,0 +1,59 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Event } from '../../../../base/common/event.js';
+
+export const IFileChangeTracker = createDecorator<IFileChangeTracker>('fileChangeTracker');
+
+export interface IFileChangeTracker {
+	readonly _serviceBrand: undefined;
+
+	initializeFileChangeTracking(conversationId: number): Promise<void>;
+	getOriginalFileContent(filePath: string, conversationId: number): Promise<string | undefined>;
+	computeLineDiff(oldContent: string, newContent: string): Promise<Array<{
+		type: 'added' | 'deleted' | 'unchanged';
+		content: string;
+		oldLine: number;
+		newLine: number;
+	}>>;
+	applyFileChangeHighlighting(uri: URI, fileChange: any): Promise<void>;
+	clearAllFileHighlighting(): void;
+	applyAutoAcceptHighlighting(uri: URI): Promise<void>;
+	acceptAllAutoAcceptChanges(uri: URI): Promise<void>;
+	rejectAllAutoAcceptChanges(uri: URI): Promise<void>;
+	acceptDiffSection(uri: URI, diffSectionId: string): Promise<void>;
+	rejectDiffSection(uri: URI, diffSectionId: string): Promise<void>;
+	clearAutoAcceptHighlighting(uri: URI): void;
+	getTrackedFilesWithChanges(): Promise<Array<{
+		filePath: string;
+		fileName: string;
+		addedLines: number;
+		deletedLines: number;
+		uri: URI;
+	}>>;
+	acceptAllExceptConversation(conversationId: number): Promise<void>;
+
+	/**
+	 * Get the notebook editor for a given URI (for notebook-specific operations)
+	 */
+	getNotebookEditorForUri(uri: URI): any; // INotebookEditor | undefined, but avoiding import cycles
+
+	/**
+	 * Get the current notebook diff summary used for overview ruler decorations.
+	 */
+	getNotebookOverviewSummary(uri: URI): Map<number, { added: number[]; deleted: number[] }> | undefined;
+
+	/**
+	 * Event fired when a diff section is accepted or rejected
+	 */
+	readonly onDiffSectionChanged: Event<{ uri: URI; action: 'accept' | 'reject'; sectionId: string }>;
+
+	/**
+	 * Event fired when diff sections are created/available for a file
+	 */
+	readonly onDiffSectionsCreated: Event<{ uri: URI; sectionIds: string[] }>;
+}

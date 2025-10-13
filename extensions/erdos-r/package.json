@@ -1,0 +1,401 @@
+{
+  "name": "erdos-r",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.0.2",
+  "publisher": "erdos",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./out/extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "%r.capabilities.untrustedWorkspaces.description%"
+    }
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionDependencies": [
+    "erdos.erdos-kernel-manager"
+  ],
+  "contributes": {
+    "configuration": [
+      {
+        "type": "object",
+        "title": "%r.configuration.title%",
+        "properties": {
+          "erdos.r.restoreWorkspace": {
+            "scope": "window",
+            "type": "boolean",
+            "default": false,
+            "description": "%r.configuration.restoreWorkspace.description%"
+          },
+          "erdos.r.quietMode": {
+            "scope": "window",
+            "type": "boolean",
+            "default": false,
+            "description": "%r.configuration.quietMode.description%"
+          },
+          "erdos.r.diagnostics.enable": {
+            "type": "boolean",
+            "default": true,
+            "description": "%r.configuration.diagnostics.enable.description%"
+          },
+          "erdos.r.symbols.includeAssignmentsInBlocks": {
+            "type": "boolean",
+            "default": false,
+            "description": "%r.configuration.symbols.includeAssignmentsInBlocks.description%"
+          },
+          "erdos.r.workspaceSymbols.includeCommentSections": {
+            "type": "boolean",
+            "default": false,
+            "description": "%r.configuration.workspaceSymbols.includeCommentSections.description%"
+          },
+          "erdos.r.customBinaries": {
+            "scope": "window",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "List of absolute paths to R executables to include in runtime discovery. These will appear in the interpreter selection dropdown.\n\nExample: Add `/usr/local/R/4.3.0/bin/R` to include a specific R installation."
+          },
+          "erdos.r.excludedBinaries": {
+            "scope": "window",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "markdownDescription": "List of absolute paths to R executables to exclude from the interpreter selection dropdown. Use this to hide interpreters you don't want to see."
+          }
+        }
+      },
+      {
+        "type": "object",
+        "title": "%r.configuration.title-dev%",
+        "properties": {
+          "erdos.r.kernel.path": {
+            "scope": "window",
+            "type": "string",
+            "default": "",
+            "description": "%r.configuration.kernelPath.description%"
+          },
+          "erdos.r.kernel.logLevel": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "error",
+              "warn",
+              "info",
+              "debug",
+              "trace"
+            ],
+            "enumDescriptions": [
+              "%r.configuration.logLevel.error.description%",
+              "%r.configuration.logLevel.warn.description%",
+              "%r.configuration.logLevel.info.description%",
+              "%r.configuration.logLevel.debug.description%",
+              "%r.configuration.logLevel.trace.description%"
+            ],
+            "default": "warn",
+            "description": "%r.configuration.logLevel.description%"
+          },
+          "erdos.r.kernel.logLevelExternal": {
+            "scope": "window",
+            "type": "string",
+            "default": "warn",
+            "title": "%r.configuration.logLevelExternal.title%",
+            "description": "%r.configuration.logLevelExternal.description%"
+          },
+          "erdos.r.kernel.profile": {
+            "scope": "window",
+            "type": "string",
+            "default": null,
+            "description": "%r.configuration.profile.description%"
+          },
+          "erdos.r.kernel.env": {
+            "scope": "window",
+            "type": "object",
+            "default": {},
+            "description": "%r.configuration.env.description%"
+          },
+          "erdos.r.trace.server": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "enumDescriptions": [
+              "%r.configuration.tracing.off.description%",
+              "%r.configuration.tracing.messages.description%",
+              "%r.configuration.tracing.verbose.description%"
+            ],
+            "default": "off",
+            "description": "%r.configuration.tracing.description%"
+          },
+          "erdos.r.extraArguments": {
+            "scope": "window",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "%r.configuration.extraArguments.description%"
+          },
+          "erdos.r.defaultRepositories": {
+            "scope": "window",
+            "type": "string",
+            "enum": [
+              "auto",
+              "rstudio",
+              "posit-ppm",
+              "none"
+            ],
+            "enumDescriptions": [
+              "%r.configuration.defaultRepositories.auto.description%",
+              "%r.configuration.defaultRepositories.rstudio.description%",
+              "%r.configuration.defaultRepositories.posit-ppm.description%",
+              "%r.configuration.defaultRepositories.none.description%"
+            ],
+            "default": "auto",
+            "markdownDescription": "%r.configuration.defaultRepositories.description%"
+          }
+        }
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "r.execInConsole",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "editorTextFocus && editorLangId == r && !findInputFocussed && !replaceInputFocussed && !jupyter.ownsSelection && !notebookEditorFocused"
+      },
+      {
+        "command": "r.execSelectionInConsole",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "editorTextFocus && editorLangId == r && !findInputFocussed && !replaceInputFocussed && !jupyter.ownsSelection && !notebookEditorFocused"
+      }
+    ],
+    "configurationDefaults": {
+      "[r]": {
+        "editor.formatOnType": true,
+        "editor.tabSize": 2,
+        "editor.wordSeparators": "`~!@#$%^&*()-=+[{]}\\|;:'\",<>/?",
+        "editor.smartSelect.selectLeadingAndTrailingWhitespace": false
+      }
+    },
+    "languages": [
+      {
+        "id": "r",
+        "extensions": [
+          ".R",
+          ".r",
+          ".Rprofile",
+          ".rprofile"
+        ],
+        "aliases": [
+          "R",
+          "r"
+        ],
+        "filenames": [
+          "NAMESPACE"
+        ],
+        "configuration": "./language-configuration/r-language-configuration.json"
+      },
+      {
+        "id": "debian-control-file",
+        "extensions": [
+          ".Rproj",
+          ".dcf"
+        ],
+        "aliases": [
+          "R DCF"
+        ],
+        "filenames": [
+          "DESCRIPTION",
+          ".lintr"
+        ],
+        "configuration": "./language-configuration/dcf-language-configuration.json"
+      },
+      {
+        "id": "r-pkg-docs",
+        "aliases": [
+          "R documentation",
+          "r documentation"
+        ],
+        "extensions": [
+          ".rd",
+          ".Rd"
+        ],
+        "configuration": "./language-configuration/r-docs-language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "r.execInConsole",
+        "category": "R",
+        "title": "%r.command.execInConsole.title%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "r.execInTerminal",
+        "category": "R",
+        "title": "%r.command.execInTerminal.title%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "r.execInTerminal-icon",
+        "category": "R",
+        "title": "%r.command.execInTerminalIcon.title%",
+        "icon": "$(play)"
+      },
+      {
+        "command": "r.execSelectionInConsole",
+        "category": "R",
+        "title": "%r.command.execSelectionInConsole.title%",
+        "icon": "$(play)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "r.execInConsole",
+          "title": "%r.command.execInConsole.title%",
+          "category": "R",
+          "when": "!virtualWorkspace && shellExecutionSupported && editorLangId == r"
+        },
+        {
+          "command": "r.execInTerminal",
+          "title": "%r.command.execInTerminal.title%",
+          "category": "R",
+          "when": "!virtualWorkspace && shellExecutionSupported && editorLangId == r"
+        },
+        {
+          "command": "r.execInTerminal-icon",
+          "title": "%r.command.execInTerminalIcon.title%",
+          "category": "R",
+          "icon": "$(play)",
+          "when": "false"
+        },
+        {
+          "command": "r.execSelectionInConsole",
+          "title": "%r.command.execSelectionInConsole.title%",
+          "category": "R",
+          "when": "!virtualWorkspace && shellExecutionSupported && editorLangId == r"
+        }
+      ],
+      "editor/title/run": [
+        {
+          "command": "r.execInTerminal-icon",
+          "group": "navigation@0",
+          "title": "%r.command.execInTerminalIcon.title%",
+          "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"
+        },
+        {
+          "command": "r.execInConsole",
+          "group": "navigation@1",
+          "title": "%r.command.execInConsole.title%",
+          "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"
+        },
+        {
+          "command": "r.execSelectionInConsole",
+          "group": "navigation@2",
+          "title": "%r.command.execSelectionInConsole.title%",
+          "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"
+        },
+        {
+          "command": "r.execInTerminal",
+          "group": "navigation@3",
+          "title": "%r.command.execInTerminal.title%",
+          "icon": "$(play)",
+          "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "r.execInConsole",
+          "group": "R",
+          "when": "resourceLangId == r && !virtualWorkspace && shellExecutionSupported"
+        },
+        {
+          "command": "r.execInTerminal",
+          "group": "R",
+          "when": "resourceLangId == r && !virtualWorkspace && shellExecutionSupported"
+        }
+      ]
+    },
+    "grammars": [
+      {
+        "language": "r",
+        "scopeName": "source.r",
+        "path": "./syntaxes/r.tmGrammar.json"
+      },
+      {
+        "language": "debian-control-file",
+        "scopeName": "source.dcf",
+        "path": "./syntaxes/dcf.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.r": "r"
+        }
+      },
+      {
+        "language": "r-pkg-docs",
+        "scopeName": "source.rdocs",
+        "path": "./syntaxes/rd.tmLanguage.json"
+      }
+    ],
+    "languageRuntimes": [
+      {
+        "languageId": "r"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "14.x",
+    "@typescript-eslint/eslint-plugin": "^5.12.1",
+    "@typescript-eslint/parser": "^5.12.1",
+    "eslint": "^8.9.0",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "p-queue": "^6.6.2",
+    "ws": "^8.0.0",
+    "xdg-portable": "^10.6.0"
+  },
+  "peerDependencies": {
+    "@vscode/windows-registry": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@vscode/windows-registry": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/willnickols/vscode"
+  },
+  "erdos": {
+    "binaryDependencies": {
+      "ark": "0.1.201"
+    },
+    "minimumRVersion": "4.2.0",
+    "minimumRenvVersion": "1.0.9"
+  }
+}

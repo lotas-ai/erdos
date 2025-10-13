@@ -1,0 +1,20 @@
+{
+	"name": "Code - OSS",
+	"short_name": "Code- OSS",
+	"start_url": "/",
+	"lang": "en-US",
+	"display": "standalone",
+	"display_override": ["window-controls-overlay"],
+	"icons": [
+		{
+			"src": "erdos-192.png",
+			"type": "image/png",
+			"sizes": "192x192"
+		},
+		{
+			"src": "erdos-512.png",
+			"type": "image/png",
+			"sizes": "512x512"
+		}
+	]
+}

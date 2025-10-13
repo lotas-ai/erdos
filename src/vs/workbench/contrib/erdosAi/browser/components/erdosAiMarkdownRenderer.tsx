@@ -1,0 +1,221 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { MarkdownString } from '../../../../../base/common/htmlContent.js';
+import { ErdosAiMarkdownRenderer } from '../markdown/erdosAiMarkdownRenderer.js';
+import { CodeLinkProcessor } from '../../../../services/erdosAiConversation/browser/codeLinkProcessor.js';
+import { DisposableStore } from '../../../../../base/common/lifecycle.js';
+
+export interface ErdosAiMarkdownProps {
+	/**
+	 * The markdown content to render
+	 */
+	content: string;
+
+	/**
+	 * Whether this content is still being streamed (affects rendering behavior)
+	 */
+	isStreaming?: boolean;
+
+	/**
+	 * The markdown renderer instance
+	 */
+	renderer: ErdosAiMarkdownRenderer;
+
+	/**
+	 * Additional CSS class name
+	 */
+	className?: string;
+
+	/**
+	 * Message ID for linking storage
+	 */
+	messageId?: number;
+}
+
+/**
+ * React component that renders markdown content using VS Code's proven markdown renderer
+ * This approach uses VS Code's MarkdownRenderer directly and safely manages DOM updates
+ */
+export const ErdosAiMarkdownComponent: React.FC<ErdosAiMarkdownProps> = ({ 
+	content, 
+	isStreaming = false, 
+	renderer, 
+	className,
+	messageId 
+}) => {
+	const containerRef = useRef<HTMLDivElement>(null);
+	const renderResultRef = useRef<{ element: HTMLElement; dispose: () => void }>();
+	const [renderError, setRenderError] = useState<string | null>(null);
+	const [processedContent, setProcessedContent] = useState(content);
+
+	// Process code links when content changes
+	useEffect(() => {
+		if (!content.trim() || !messageId) {
+			setProcessedContent(content);
+			return;
+		}
+
+		// Process code links asynchronously (handles caching internally)
+		CodeLinkProcessor.processCodeLinks(content, messageId).then(links => {
+			// Create processed content with clickable links using command protocol
+			let processed = content;
+			for (const link of links) {
+				// Only replace backticked text that hasn't already been converted to a link
+				// This prevents double-processing while allowing multiple different links per message
+				const pattern = new RegExp(`\`${escapeRegExp(link.text)}\`(?!\\]\\()`, 'g');
+				const replacement = `[\`${link.text}\`](command:erdosAi.openFile?${encodeURIComponent(JSON.stringify([link.filePath]))})`;
+				processed = processed.replace(pattern, replacement);
+			}
+			setProcessedContent(processed);
+		}).catch(error => {
+			console.error('[ErdosAiMarkdownComponent] Error processing code links:', error);
+			setProcessedContent(content);
+		});
+	}, [content, messageId]);
+
+	useEffect(() => {
+		if (!containerRef.current) {
+			return;
+		}
+		
+		// Create disposable store for this render lifecycle
+		const disposableStore = new DisposableStore();
+		
+		// If no content, clear container but don't exit early - allow renderer setup
+		if (!processedContent.trim()) {
+			// Clear container if no content
+			while (containerRef.current.firstChild) {
+				containerRef.current.removeChild(containerRef.current.firstChild);
+			}
+			return () => disposableStore.dispose();
+		}
+
+		const container = containerRef.current;
+
+		try {
+			// Dispose previous render result
+			if (renderResultRef.current) {
+				renderResultRef.current.dispose();
+			}
+
+			// Create markdown string with proper VS Code options
+			const markdownString = new MarkdownString(processedContent, {
+				isTrusted: true,
+				supportHtml: true, // Enable HTML support for thinking blocks
+				supportThemeIcons: true
+			});
+
+				// Render using VS Code's MarkdownRenderer
+			const renderResult = disposableStore.add(renderer.render(markdownString, {
+				// Enable code block syntax highlighting
+				fillInIncompleteTokens: isStreaming,
+			}, {
+				// Enable GitHub Flavored Markdown features and line breaks
+				gfm: true,
+				breaks: true,
+				// Ensure proper inline parsing
+				pedantic: false
+			}));
+
+			// Clear container and append the properly rendered element
+			while (container.firstChild) {
+				container.removeChild(container.firstChild);
+			}
+			
+			// VS Code's MarkdownRenderer returns a properly sanitized DOM element
+			container.appendChild(renderResult.element);
+			
+			// Unescape HTML entities that marked.js incorrectly escapes in text content
+			// This fixes the issue where single quotes show up as &#39; in conversation display
+			const unescapeHtmlEntities = (element: HTMLElement) => {
+				const walker = document.createTreeWalker(
+					element,
+					NodeFilter.SHOW_TEXT,
+					null
+				);
+				
+				const textNodes: Text[] = [];
+				let node;
+				while (node = walker.nextNode()) {
+					textNodes.push(node as Text);
+				}
+				
+				textNodes.forEach(textNode => {
+					const unescapedText = textNode.textContent?.replace(/&(#\d+|[a-zA-Z]+);/g, (match) => {
+						const unescapeMap: Record<string, string> = {
+							'&quot;': '"',
+							'&nbsp;': ' ',
+							'&amp;': '&',
+							'&#39;': "'",
+							'&lt;': '<',
+							'&gt;': '>'
+						};
+						return unescapeMap[match] ?? match;
+					});
+					if (unescapedText && unescapedText !== textNode.textContent) {
+						textNode.textContent = unescapedText;
+					}
+				});
+			};
+			
+			unescapeHtmlEntities(renderResult.element);
+
+			// Store render result for cleanup
+			renderResultRef.current = renderResult;
+
+			// Clear any previous errors
+			setRenderError(null);
+
+		} catch (error) {
+			console.error(`[ErdosAiMarkdownComponent] Error during markdown rendering:`, error);
+			setRenderError(error instanceof Error ? error.message : 'Unknown error');
+			
+			// Fallback to plain text if markdown rendering fails
+			container.textContent = processedContent;
+		}
+
+		// Return cleanup function to dispose all resources
+		return () => {
+			disposableStore.dispose();
+		};
+	}, [processedContent, renderer, isStreaming]);
+
+	// Cleanup on unmount
+	useEffect(() => {
+		return () => {
+			if (renderResultRef.current) {
+				renderResultRef.current.dispose();
+			}
+		};
+	}, []);
+
+	if (renderError) {
+		return (
+			<div className={className}>
+				<div className="erdos-ai-markdown-error">
+					Markdown render error: {renderError}
+				</div>
+				<pre className="erdos-ai-markdown-fallback">{content}</pre>
+			</div>
+		);
+	}
+
+	return (
+		<div 
+			ref={containerRef} 
+			className={`erdos-ai-markdown ${className || ''} ${isStreaming ? 'streaming' : ''}`}
+		/>
+	);
+};
+
+/**
+ * Escape special regex characters
+ */
+function escapeRegExp(text: string): string {
+	return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}

@@ -1,0 +1,42 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "*": ["types/*"],
+            "vscode": ["../../../src/vscode-dts/vscode.d.ts"],
+            "vscode-languageclient": [
+                "../node_modules/vscode-languageclient/lib/common/api.d.ts"
+            ],
+            "vscode-languageclient/node": [
+                "../node_modules/vscode-languageclient/lib/node/main.d.ts"
+            ]
+        },
+        "module": "commonjs",
+        "target": "es2018",
+        "outDir": "./out",
+        "lib": [
+            "es6",
+            "es2018",
+            "dom",
+            "ES2019",
+            "ES2020"
+        ],
+        "sourceMap": true,
+        "rootDir": "src",
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "resolveJsonModule": true,
+        "declaration": true,
+        "types": ["node"]
+    },
+    "exclude": [
+        "node_modules",
+        "out"
+    ]
+}

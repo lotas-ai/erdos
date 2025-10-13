@@ -1,0 +1,841 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+/* ===== DATA GRID STYLES ===== */
+
+/* Data Grid Container */
+.data-grid {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+	font-family: var(--monaco-font-family);
+	font-size: inherit; /* Use font size from parent container */
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-editor-foreground);
+	outline: none;
+}
+
+.data-grid:focus-within {
+	outline: 1px solid var(--vscode-focusBorder);
+}
+
+/* Grid Container - holds headers and body together */
+.grid-container {
+	flex: 1;
+	overflow: auto;
+	position: relative;
+	contain: layout style;
+}
+
+/* Column Headers Container */
+.column-headers-container {
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	border-bottom: 1px solid var(--vscode-widget-border);
+	position: relative;
+}
+
+/* Column Letters Row */
+.column-letters-row {
+	display: flex;
+	flex-shrink: 0;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	border-bottom: 1px solid var(--vscode-widget-border);
+	min-height: 24px;
+	width: 100%;
+	min-width: 100%;
+}
+
+.column-letter-header {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px 4px;
+	border-right: 1px solid var(--vscode-widget-border);
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	color: var(--vscode-descriptionForeground);
+	font-size: 11px;
+	font-weight: 500;
+	font-family: var(--monaco-monospace-font);
+	text-align: center;
+	flex-shrink: 0;
+	box-sizing: border-box;
+	user-select: none;
+}
+
+.column-letter-header.row-number-space {
+	background-color: var(--vscode-editorGutter-background);
+	border-right: 2px solid var(--vscode-widget-border);
+}
+
+.column-letter-header.select-all-corner {
+	cursor: pointer;
+	user-select: none;
+}
+
+.column-letter-header.select-all-corner:hover {
+	background-color: var(--vscode-list-hoverBackground) !important;
+}
+
+.column-letter-header.select-all-corner:active {
+	background-color: var(--vscode-list-activeSelectionBackground) !important;
+}
+
+.select-all-icon {
+	font-size: 10px;
+	color: var(--vscode-descriptionForeground);
+	opacity: 0.7;
+}
+
+.column-letter-header {
+	cursor: pointer;
+}
+
+.column-letter-header:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.column-letter-header.selected {
+	background-color: var(--vscode-list-inactiveSelectionBackground) !important;
+	color: var(--vscode-list-inactiveSelectionForeground) !important;
+}
+
+/* Sortable Column Letter Styling */
+.sortable-column-letter {
+	cursor: context-menu;
+	transition: background-color 0.1s ease;
+}
+
+.sortable-column-letter:hover {
+	background-color: var(--vscode-list-hoverBackground, rgba(0, 120, 212, 0.1));
+}
+
+.column-letter-content {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 0 2px;
+}
+
+.column-letter-text {
+	flex: 1;
+	text-align: center;
+}
+
+.column-letter-content .sort-indicator {
+	padding: 1px;
+	margin-left: 2px;
+}
+
+/* Column Headers */
+.column-headers {
+	display: flex;
+	flex-shrink: 0;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	min-height: 32px;
+}
+
+.column-header {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	padding: 4px 8px;
+	border-right: 1px solid var(--vscode-widget-border);
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	cursor: pointer;
+	flex-shrink: 0;
+	box-sizing: border-box;
+}
+
+.column-header:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.column-name {
+	font-weight: 600;
+	color: var(--vscode-foreground);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Column name wrapper for editable headers */
+.column-name-wrapper {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+}
+
+.column-type {
+	font-size: 11px;
+	color: var(--vscode-descriptionForeground);
+	margin-top: 2px;
+}
+
+/* Grid Body */
+.grid-body {
+	background-color: var(--vscode-editor-background);
+}
+
+/* Fixed Headers Layout */
+.grid-with-fixed-headers {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	display: grid;
+	grid-template-columns: 60px 1fr;
+	grid-template-rows: 24px 1fr;
+	grid-template-areas: 
+		"corner headers"
+		"rows data";
+	background-color: var(--vscode-editor-background);
+}
+
+.fixed-corner {
+	grid-area: corner;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	border-right: 2px solid var(--vscode-widget-border);
+	border-bottom: 1px solid var(--vscode-widget-border);
+	z-index: 3;
+	position: relative;
+}
+
+.fixed-column-headers {
+	grid-area: headers;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	border-bottom: 1px solid var(--vscode-widget-border);
+	overflow: hidden;
+	z-index: 2;
+	position: relative;
+}
+
+.fixed-row-numbers {
+	grid-area: rows;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	border-right: 2px solid var(--vscode-widget-border);
+	overflow: hidden;
+	z-index: 2;
+	position: relative;
+}
+
+.scrollable-data-area {
+	grid-area: data;
+	background-color: var(--vscode-editor-background);
+	overflow: auto;
+	z-index: 1;
+}
+
+/* Grid Rows */
+.grid-row {
+	display: flex;
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+	min-height: calc(1em + 10px); /* Dynamic height based on font size */
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.grid-row:nth-child(even) {
+	background-color: var(--vscode-editor-lineHighlightBackground);
+}
+
+/* Ensure all rows have bottom borders */
+.grid-body .grid-row:last-child {
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+
+/* Grid Cells */
+.grid-cell {
+	padding: 0;
+	border-right: 1px solid var(--vscode-editorWidget-border);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: text;
+	flex-shrink: 0;
+	height: calc(1em + 10px); /* Dynamic height based on font size */
+	min-height: 20px; /* Minimum height */
+	display: flex;
+	align-items: center;
+	box-sizing: border-box;
+}
+
+/* Text wrapping support for cells with dynamic row heights */
+.grid-cell.text-wrap {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	overflow: hidden;
+	text-overflow: unset;
+	align-items: flex-start;
+	padding: 0;
+}
+
+/* Remove hover effects from regular grid cells */
+.grid-cell:hover {
+	background-color: inherit;
+	color: inherit;
+}
+
+/* Editable cell content styling - make seamless */
+.editable-cell {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	padding: 0;
+	margin: 0;
+	border: none;
+	background: transparent;
+	color: inherit;
+	font-family: inherit;
+	font-size: inherit;
+	outline: none;
+	cursor: text;
+	overflow: hidden;
+}
+
+/* Editable cell in text-wrapped rows should align to top */
+.grid-cell.text-wrap .editable-cell {
+	align-items: flex-start;
+}
+
+/* Row number cell styling */
+.row-number-cell {
+	background-color: var(--vscode-editorGroupHeader-tabsBackground) !important;
+	border-right: 2px solid var(--vscode-widget-border) !important;
+	border-bottom: 1px solid var(--vscode-editorWidget-border) !important;
+	color: var(--vscode-descriptionForeground) !important;
+	text-align: center;
+	font-size: 11px;
+	font-weight: 500;
+	font-family: var(--monaco-monospace-font);
+	cursor: pointer;
+	user-select: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.row-number-cell:hover {
+	background-color: var(--vscode-list-hoverBackground) !important;
+	cursor: pointer;
+}
+
+.row-number-cell.selected {
+	background-color: var(--vscode-list-inactiveSelectionBackground) !important;
+	color: var(--vscode-editor-foreground) !important;
+}
+
+/* Cell Type Styling */
+.grid-cell-string {
+	color: var(--vscode-editor-foreground);
+}
+
+.grid-cell-number {
+	color: var(--vscode-debugTokenExpression-number);
+	text-align: right;
+	font-family: var(--monaco-monospace-font);
+}
+
+.grid-cell-boolean {
+	color: var(--vscode-debugTokenExpression-boolean);
+	font-weight: 500;
+}
+
+.grid-cell-date {
+	color: var(--vscode-debugTokenExpression-string);
+	font-family: var(--monaco-monospace-font);
+}
+
+/* More Rows Indicator */
+.grid-row-count {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 16px;
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+	border-top: 1px solid var(--vscode-widget-border);
+}
+
+.grid-more-rows {
+	color: var(--vscode-descriptionForeground);
+	font-style: italic;
+	font-size: 12px;
+	background-color: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+	padding: 4px 8px;
+	border-radius: 3px;
+}
+
+/* Scrollbars */
+.grid-body::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+.grid-body::-webkit-scrollbar-corner {
+	background-color: var(--vscode-scrollbarSlider-background);
+}
+
+.grid-body::-webkit-scrollbar-thumb {
+	background-color: var(--vscode-scrollbarSlider-background);
+	border-radius: 5px;
+}
+
+.grid-body::-webkit-scrollbar-thumb:hover {
+	background-color: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+.grid-body::-webkit-scrollbar-track {
+	background-color: var(--vscode-editor-background);
+}
+
+.column-headers::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+.column-headers::-webkit-scrollbar-thumb {
+	background-color: var(--vscode-scrollbarSlider-background);
+	border-radius: 5px;
+}
+
+.column-headers::-webkit-scrollbar-thumb:hover {
+	background-color: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+.column-headers::-webkit-scrollbar-track {
+	background-color: var(--vscode-editorGroupHeader-tabsBackground);
+}
+
+/* Selection States */
+.grid-cell.selected {
+	background-color: var(--vscode-list-inactiveSelectionBackground) !important;
+	color: var(--vscode-list-inactiveSelectionForeground) !important;
+	border-right: 1px solid var(--vscode-editorWidget-border) !important;
+	border-bottom: 1px solid var(--vscode-editorWidget-border) !important;
+}
+
+.grid-row.selected {
+	background-color: var(--vscode-list-inactiveSelectionBackground);
+	color: var(--vscode-list-inactiveSelectionForeground);
+	border-bottom: 1px solid var(--vscode-editorWidget-border);
+}
+
+.grid-row.selected .grid-cell {
+	border-right: 1px solid var(--vscode-editorWidget-border);
+}
+
+/* Ensure row number cells maintain their styling even when row is selected (unless the row number itself is selected) */
+.grid-row.selected .row-number-cell:not(.selected) {
+	background-color: var(--vscode-editorGutter-background) !important;
+	color: var(--vscode-editor-foreground) !important;
+}
+
+/* Cell-level selection styling - same as column/row selection */
+.grid-cell.cell-selected {
+	background-color: var(--vscode-list-inactiveSelectionBackground) !important;
+	color: var(--vscode-list-inactiveSelectionForeground) !important;
+	border-right: 1px solid var(--vscode-editorWidget-border) !important;
+	border-bottom: 1px solid var(--vscode-editorWidget-border) !important;
+}
+
+/* Find match highlighting */
+.grid-cell.cell-find-match {
+	background-color: var(--vscode-editor-findMatchBackground) !important;
+	border: 1px solid var(--vscode-editor-findMatchBorder) !important;
+}
+
+/* Current find match highlighting (if needed later) */
+.grid-cell.cell-find-match.current {
+	background-color: var(--vscode-editor-findMatchHighlightBackground) !important;
+	border: 1px solid var(--vscode-editor-findMatchHighlightBorder) !important;
+}
+
+/* Single cell selection styling - for the currently selected cell */
+.cell-content.selected {
+	background-color: var(--vscode-list-inactiveSelectionBackground) !important;
+	color: var(--vscode-list-inactiveSelectionForeground) !important;
+	border: 2px solid var(--vscode-focusBorder) !important;
+	box-sizing: border-box;
+	width: 100% !important;
+	height: 100% !important;
+	display: flex !important;
+	align-items: center !important;
+	padding: 0 !important;
+	margin: 0 !important;
+}
+
+/* Empty State */
+.grid-body:empty::before {
+	content: "No data to display";
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100px;
+	color: var(--vscode-descriptionForeground);
+	font-style: italic;
+}
+
+/* Resize Handles */
+.column-resize-handle {
+	position: absolute;
+	top: 0;
+	right: -2px;
+	width: 4px;
+	height: 100%;
+	cursor: col-resize;
+	background: transparent;
+	z-index: 10;
+}
+
+.column-resize-handle:hover {
+	background-color: var(--vscode-focusBorder);
+}
+
+.row-resize-handle {
+	position: absolute;
+	bottom: -2px;
+	left: 0;
+	width: 100%;
+	height: 4px;
+	cursor: row-resize;
+	background: transparent;
+	z-index: 10;
+}
+
+.row-resize-handle:hover {
+	background-color: var(--vscode-focusBorder);
+}
+
+/* Make sure resize handles are visible during resize operations */
+.data-grid.resizing .column-resize-handle,
+.data-grid.resizing .row-resize-handle {
+	background-color: var(--vscode-focusBorder);
+}
+
+/* Precise resize highlighting - only for the specific border being resized */
+.column-header.resizing-column {
+	border-right: 2px solid var(--vscode-focusBorder) !important;
+}
+
+.grid-cell.resizing-column {
+	border-right: 2px solid var(--vscode-focusBorder) !important;
+}
+
+.row-number-cell.resizing-row {
+	border-bottom: 2px solid var(--vscode-focusBorder) !important;
+}
+
+.grid-row.resizing-row .grid-cell {
+	border-bottom: 2px solid var(--vscode-focusBorder) !important;
+}
+
+/* Frozen Row/Column Styling */
+.grid-row.frozen-row {
+	position: sticky !important;
+	z-index: 10;
+	background-color: var(--vscode-editor-background);
+	border-bottom: 2px solid var(--vscode-focusBorder) !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.grid-cell.frozen-column {
+	position: sticky !important;
+	z-index: 5;
+	background-color: var(--vscode-editor-background);
+	border-right: 2px solid var(--vscode-focusBorder) !important;
+	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.grid-cell.frozen-row-column {
+	z-index: 15 !important; /* Highest priority for intersection */
+	border-right: 2px solid var(--vscode-focusBorder) !important;
+	border-bottom: 2px solid var(--vscode-focusBorder) !important;
+	box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.row-number-cell.frozen-row {
+	position: sticky !important;
+	z-index: 12;
+	border-bottom: 2px solid var(--vscode-focusBorder) !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.column-letter-header.frozen-column {
+	position: sticky !important;
+	z-index: 8;
+	border-right: 2px solid var(--vscode-focusBorder) !important;
+	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Freeze visual indicators */
+.freeze-indicator {
+	position: absolute;
+	background-color: var(--vscode-focusBorder);
+	opacity: 0.7;
+	pointer-events: none;
+}
+
+.freeze-indicator.horizontal {
+	width: 100%;
+	height: 2px;
+	bottom: -1px;
+	left: 0;
+}
+
+.freeze-indicator.vertical {
+	width: 2px;
+	height: 100%;
+	right: -1px;
+	top: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+	.grid-cell,
+	.column-header {
+		min-width: 60px;
+		font-size: 12px;
+	}
+	
+	.column-type {
+		display: none;
+	}
+	
+	.column-letter-header {
+		font-size: 10px;
+		padding: 1px 2px;
+		min-height: 20px;
+	}
+}
+
+/* Clipboard visual feedback */
+.grid-cell.clipboard-copy {
+	animation: clipboard-pulse 1s ease-in-out;
+}
+
+.grid-cell.clipboard-cut {
+	opacity: 0.7;
+	animation: clipboard-pulse 1s ease-in-out;
+}
+
+/* Border styles for clipboard regions - only on outer edges */
+.grid-cell.clipboard-copy.clipboard-top {
+	border-top: 2px solid var(--vscode-inputValidation-infoBorder, #007acc);
+}
+
+.grid-cell.clipboard-copy.clipboard-bottom {
+	border-bottom: 2px solid var(--vscode-inputValidation-infoBorder, #007acc);
+}
+
+.grid-cell.clipboard-copy.clipboard-left {
+	border-left: 2px solid var(--vscode-inputValidation-infoBorder, #007acc);
+}
+
+.grid-cell.clipboard-copy.clipboard-right {
+	border-right: 2px solid var(--vscode-inputValidation-infoBorder, #007acc);
+}
+
+.grid-cell.clipboard-cut.clipboard-top {
+	border-top: 2px dashed var(--vscode-inputValidation-warningBorder, #ff8c00);
+}
+
+.grid-cell.clipboard-cut.clipboard-bottom {
+	border-bottom: 2px dashed var(--vscode-inputValidation-warningBorder, #ff8c00);
+}
+
+.grid-cell.clipboard-cut.clipboard-left {
+	border-left: 2px dashed var(--vscode-inputValidation-warningBorder, #ff8c00);
+}
+
+.grid-cell.clipboard-cut.clipboard-right {
+	border-right: 2px dashed var(--vscode-inputValidation-warningBorder, #ff8c00);
+}
+
+@keyframes clipboard-pulse {
+	0% {
+		border-color: transparent;
+	}
+	50% {
+		border-color: currentColor;
+	}
+	100% {
+		border-color: currentColor;
+	}
+}
+
+/* Filter Components */
+.column-actions {
+	display: flex;
+	align-items: center;
+}
+
+.filter-chevron {
+	transition: color 0.2s ease;
+	user-select: none;
+}
+
+.filter-chevron:hover {
+	opacity: 1 !important;
+	color: var(--vscode-foreground) !important;
+}
+
+.filter-chevron.filtered {
+	color: var(--vscode-charts-blue) !important;
+	opacity: 1 !important;
+}
+
+/* ===== SORT INDICATOR STYLES ===== */
+
+/* Sort Indicator Styles */
+.sort-indicator {
+	display: flex;
+	align-items: center;
+	margin-left: 4px;
+	min-width: 16px;
+	justify-content: flex-end;
+}
+
+.sort-arrow {
+	font-size: 12px;
+	color: var(--vscode-foreground, #000000);
+	line-height: 1;
+	font-weight: normal;
+	opacity: 0.8;
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+}
+
+.sort-arrow.ascending {
+	color: var(--vscode-charts-blue, #0078d4);
+}
+
+.sort-arrow.descending {
+	color: var(--vscode-charts-red, #d13438);
+}
+
+/* Ensure codicons are properly styled */
+.sort-arrow.codicon {
+	font-family: 'codicon';
+	font-size: 12px;
+	text-align: center;
+	vertical-align: middle;
+}
+
+/* Priority numbers removed - no longer displayed */
+
+/* Dark theme adjustments */
+.vscode-dark .sort-arrow {
+	color: var(--vscode-foreground, #cccccc);
+}
+
+.vscode-dark .sort-arrow.ascending {
+	color: var(--vscode-charts-blue, #569cd6);
+}
+
+.vscode-dark .sort-arrow.descending {
+	color: var(--vscode-charts-red, #f44747);
+}
+
+/* High contrast theme adjustments */
+.vscode-high-contrast .sort-arrow {
+	color: var(--vscode-foreground, #ffffff);
+	font-weight: 900;
+}
+
+/* Clickable chevron styling */
+.sort-indicator {
+	cursor: pointer;
+	padding: 2px;
+	border-radius: 2px;
+	transition: background-color 0.1s ease;
+}
+
+.sort-indicator:hover {
+	background-color: var(--vscode-toolbar-hoverBackground, rgba(0, 0, 0, 0.1));
+}
+
+/* ===== CELL EDITOR STYLES ===== */
+
+/* Base styles for all cell editors */
+.cell-editor {
+	width: 100%;
+	height: 100%;
+	border: 2px solid var(--vscode-focusBorder, #0078d4);
+	background-color: var(--vscode-input-background, #ffffff);
+	color: var(--vscode-input-foreground, #000000);
+	font-family: var(--vscode-font-family, 'Segoe UI', sans-serif);
+	font-size: var(--vscode-font-size, 13px);
+	padding: 2px;
+	margin: 0;
+	box-sizing: border-box;
+	outline: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 1000;
+}
+
+.cell-editor:focus {
+	border-color: var(--vscode-focusBorder, #0078d4);
+	box-shadow: 0 0 0 1px var(--vscode-focusBorder, #0078d4);
+}
+
+/* Text editor specific styles */
+.text-editor {
+	text-align: left;
+	width: 100% !important;
+	min-width: 100% !important;
+	box-sizing: border-box;
+}
+
+/* Editable cell styles */
+.editable-cell {
+	cursor: text;
+	position: relative;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+}
+
+.editable-cell:hover {
+	background-color: var(--vscode-list-hoverBackground, rgba(0, 120, 212, 0.1));
+}
+
+.editable-cell:focus {
+	outline: 1px solid var(--vscode-focusBorder, #0078d4);
+	outline-offset: -1px;
+}
+
+/* Dark theme adjustments */
+.vscode-dark .cell-editor {
+	background-color: var(--vscode-input-background, #3c3c3c);
+	color: var(--vscode-input-foreground, #cccccc);
+	border-color: var(--vscode-focusBorder, #0078d4);
+}
+
+.vscode-dark .editable-cell:hover {
+	background-color: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.1));
+}
+
+/* High contrast theme adjustments */
+.vscode-high-contrast .cell-editor {
+	border-width: 2px;
+	border-color: var(--vscode-contrastBorder, #ffffff);
+}
+
+.vscode-high-contrast .cell-editor:focus {
+	border-color: var(--vscode-focusBorder, #ffffff);
+	box-shadow: 0 0 0 1px var(--vscode-focusBorder, #ffffff);
+}

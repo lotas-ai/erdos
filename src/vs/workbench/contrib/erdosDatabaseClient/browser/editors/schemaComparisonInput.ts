@@ -1,0 +1,69 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+// This file contains the UI-exposed schema comparison input functionality
+// which has been disabled by commenting out all imports and class definitions
+
+/*
+import { EditorInput } from '../../../../common/editor/editorInput.js';
+import { URI } from '../../../../../base/common/uri.js';
+import { ISchemaComparison } from '../../common/erdosDatabaseClientApi.js';
+
+export class SchemaComparisonInput extends EditorInput {
+
+	static readonly ID = 'erdos.schemaComparisonInput';
+
+	constructor(
+		public readonly fromConnection: string,
+		public readonly fromDatabase: string,
+		public readonly toConnection: string,
+		public readonly toDatabase: string,
+		public initialComparison: ISchemaComparison | undefined,
+		public readonly resource: URI
+	) {
+		super();
+	}
+
+	override get typeId(): string {
+		return SchemaComparisonInput.ID;
+	}
+
+	override getName(): string {
+		return `Schema Comparison - ${this.fromDatabase} → ${this.toDatabase}`;
+	}
+
+	override getDescription(): string | undefined {
+		return `Compare ${this.fromConnection}/${this.fromDatabase} with ${this.toConnection}/${this.toDatabase}`;
+	}
+
+	override get capabilities(): number {
+		return super.capabilities;
+	}
+
+	override matches(otherInput: EditorInput): boolean {
+		if (super.matches(otherInput)) {
+			return true;
+		}
+
+		if (otherInput instanceof SchemaComparisonInput) {
+			return otherInput.fromConnection === this.fromConnection &&
+				   otherInput.fromDatabase === this.fromDatabase &&
+				   otherInput.toConnection === this.toConnection &&
+				   otherInput.toDatabase === this.toDatabase;
+		}
+
+		return false;
+	}
+
+	public updateComparison(comparison: ISchemaComparison): void {
+		this.initialComparison = comparison;
+		this._onDidChangeLabel.fire();
+	}
+
+	override dispose(): void {
+		super.dispose();
+	}
+}
+*/

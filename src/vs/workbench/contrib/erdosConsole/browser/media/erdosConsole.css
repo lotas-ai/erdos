@@ -1,0 +1,117 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.editor-frame {
+	flex: 0 0 auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.console-viewport-inner {
+	cursor: text;
+	word-wrap: break-word;
+}
+
+.repl-console-view {
+}
+
+.stream-content {
+	user-select: text;
+	-ms-user-select: text;
+	-moz-user-select: text;
+	-webkit-user-select: text;
+	cursor: text;
+}
+
+.console-panel {
+	background-color: var(--vscode-sideBar-background);
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.console-grid {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.stream-wrapper {
+}
+
+.console-viewport {
+	height: 100%;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.repl-console {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	color: var(--vscode-erdosConsole-foreground);
+	background: var(--vscode-erdosConsole-background);
+}
+
+.console-startup-screen {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	width: 100%;
+	gap: 0;
+}
+
+.startup-message {
+	font-size: 16px;
+	color: var(--vscode-foreground);
+	opacity: 0.7;
+}
+
+.startup-panel {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	background-color: var(--vscode-sideBar-background);
+	opacity: 0.6;
+	transition: opacity 0.2s ease;
+}
+
+.startup-panel:hover {
+	opacity: 0.8;
+}
+
+.startup-panel:only-child {
+	max-width: 400px;
+}
+
+.startup-icon-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 24px;
+}
+
+.startup-icon {
+	width: 90px;
+	height: 90px;
+}
+
+.startup-text {
+	font-size: 14px;
+	color: var(--vscode-foreground);
+	font-weight: 500;
+}
+
+/* Hide gutter when in input mode to allow inline prompt */
+.input-mode-hide-gutter .margin,
+.input-mode-hide-gutter .monaco-editor .margin-view-overlays {
+	display: none !important;
+	width: 0 !important;
+}

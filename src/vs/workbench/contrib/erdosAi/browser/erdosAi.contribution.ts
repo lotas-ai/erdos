@@ -1,0 +1,665 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+import * as nls from '../../../../nls.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
+import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
+import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { ErdosAiViewPane } from './erdosAiView.js';
+import { ERDOS_AI_VIEW_ID } from '../../../services/erdosAi/common/erdosAiServiceCore.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions, IWorkbenchContribution } from '../../../common/contributions.js';
+import { Extensions as ViewContainerExtensions, IViewsRegistry, IViewContainersRegistry, ViewContainer, ViewContainerLocation } from '../../../common/views.js';
+import { registerAction2, Action2, MenuId } from '../../../../platform/actions/common/actions.js';
+import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
+import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
+import { ViewPaneContainer } from '../../../browser/parts/views/viewPaneContainer.js';
+import { KeyMod, KeyCode } from '../../../../base/common/keyCodes.js';
+import { Extensions as ConfigurationExtensions, IConfigurationRegistry, ConfigurationScope } from '../../../../platform/configuration/common/configurationRegistry.js';
+import { IPreferencesService } from '../../../services/preferences/common/preferences.js';
+import { IErdosAiServiceCore } from '../../../services/erdosAi/common/erdosAiServiceCore.js';
+import { ErdosAiServiceCore } from '../../../services/erdosAi/browser/erdosAiServiceCore.js';
+import { IErdosAiAuthService } from '../../../services/erdosAi/common/erdosAiAuthService.js';
+import { ErdosAiAuthService } from '../../../services/erdosAi/browser/erdosAiAuthService.js';
+import { IErdosAiRulesService } from '../../../services/erdosAi/common/erdosAiRulesService.js';
+import { ErdosAiRulesService } from '../../../services/erdosAi/browser/erdosAiRulesService.js';
+import { IErdosAiNameService } from '../../../services/erdosAi/common/erdosAiNameService.js';
+import { ErdosAiNameService } from '../../../services/erdosAi/browser/erdosAiNameService.js';
+
+// CSS imports
+import './media/erdosAiView.css';
+import './media/erdosAiDiffHighlighting.css';
+import './media/contextBar.css';
+import './media/imageAttachment.css';
+import './media/erdosAiWidgets.css';
+import './media/settings.css';
+import './media/errorMessage.css';
+
+// Backend Services
+import { IBackendClient } from '../../../services/erdosAiBackend/common/backendClient.js';
+import { BackendClient } from '../../../services/erdosAiBackend/browser/backendClient.js';
+
+// Function Call Services
+import { IFunctionCallService } from '../../../services/erdosAiFunctions/common/functionCallService.js';
+import { FunctionCallHandler } from '../../../services/erdosAiFunctions/browser/functionCallService.js';
+
+// Document Services
+import { IDocumentManager } from '../../../services/erdosAiDocument/common/documentManager.js';
+import { DocumentManager } from '../../../services/erdosAiDocument/browser/documentManager.js';
+
+// Conversation Services
+import { IConversationManager } from '../../../services/erdosAiConversation/common/conversationManager.js';
+import { ConversationManager } from '../../../services/erdosAiConversation/browser/conversationManager.js';
+import { IConversationSaveMutex } from '../../../services/erdosAiConversation/common/conversationSaveMutex.js';
+import { ConversationSaveMutex } from '../../../services/erdosAiConversation/browser/conversationSaveMutex.js';
+import { IConversationUtilities } from '../../../services/erdosAiConversation/common/conversationUtilities.js';
+import { ConversationUtilities } from '../../../services/erdosAiConversation/browser/conversationUtilities.js';
+import { IConversationVariableManager } from '../../../services/erdosAiConversation/common/conversationVariableManager.js';
+import { ConversationVariableManager } from '../../../services/erdosAiConversation/browser/conversationVariableManager.js';
+
+// Auth Services
+import { IApiKeyManager } from '../../../services/erdosAiAuth/common/apiKeyManager.js';
+import { ApiKeyManager } from '../../../services/erdosAiAuth/browser/apiKeyManager.js';
+
+// Context Services
+import { IContextService } from '../../../services/erdosAiContext/common/contextService.js';
+import { ContextService } from '../../../services/erdosAiContext/browser/contextService.js';
+
+// Advanced Services
+import { IAutoAcceptService } from '../../../services/erdosAiAutomation/common/autoAcceptService.js';
+import { AutoAcceptService } from '../../../services/erdosAiAutomation/browser/autoAcceptService.js';
+import { IFunctionMessageManager } from '../../../services/erdosAiFunctions/common/functionMessageManager.js';
+import { FunctionMessageManager } from '../../../services/erdosAiFunctions/browser/functionMessageManager.js';
+import { IErdosAiSettingsService } from '../../../services/erdosAiSettings/common/settingsService.js';
+import { ErdosAiSettingsService } from '../../../services/erdosAiSettings/browser/settingsService.js';
+import { IMessageReversion } from '../../../services/erdosAi/common/messageReversion.js';
+import { MessageReversion } from '../../../services/erdosAi/browser/messageReversion.js';
+import { IFileChangeTracker } from '../../../services/erdosAi/common/fileChangeTracker.js';
+import { FileChangeTracker } from '../../../services/erdosAi/browser/fileChangeTracker.js';
+
+// Auto Accept Editor Overlay
+import { AutoAcceptEditorOverlay } from './autoAcceptEditorOverlay.js';
+
+// Session Management Service
+import { ISessionManagement } from '../../../services/erdosAiUtils/common/sessionManagement.js';
+import { SessionManagement } from '../../../services/erdosAiUtils/browser/sessionManagement.js';
+
+// Command Services
+import { IConsoleCommandHandler } from '../../../services/erdosAiCommands/common/consoleCommandHandler.js';
+import { ConsoleCommandHandler } from '../../../services/erdosAiCommands/browser/consoleCommandHandler.js';
+import { ITerminalCommandHandler } from '../../../services/erdosAiCommands/common/terminalCommandHandler.js';
+import { TerminalCommandHandler } from '../../../services/erdosAiCommands/browser/terminalCommandHandler.js';
+import { IFileCommandHandler } from '../../../services/erdosAiCommands/common/fileCommandHandler.js';
+import { FileCommandHandler } from '../../../services/erdosAiCommands/browser/fileCommandHandler.js';
+import { ISearchReplaceCommandHandler } from '../../../services/erdosAiCommands/common/searchReplaceCommandHandler.js';
+import { SearchReplaceCommandHandler } from '../../../services/erdosAiCommands/browser/searchReplaceCommandHandler.js';
+import { IDeleteFileCommandHandler } from '../../../services/erdosAiCommands/common/deleteFileCommandHandler.js';
+import { DeleteFileCommandHandler } from '../../../services/erdosAiCommands/browser/deleteFileCommandHandler.js';
+import { IAutoAcceptHandler } from '../../../services/erdosAiCommands/common/autoAcceptHandler.js';
+import { AutoAcceptHandler } from '../../../services/erdosAiCommands/browser/autoAcceptHandler.js';
+import { IFunctionParserService } from '../../../services/erdosAiCommands/common/functionParserService.js';
+import { FunctionParserService } from '../../../services/erdosAiCommands/browser/functionParserService.js';
+
+// Additional Advanced Services
+import { IThinkingProcessor } from '../../../services/erdosAi/common/thinkingProcessor.js';
+import { ThinkingProcessor } from '../../../services/erdosAi/browser/thinkingProcessor.js';
+
+// Additional Backend Services
+import { ISSEParser } from '../../../services/erdosAiBackend/common/streamingParser.js';
+import { SSEParser } from '../../../services/erdosAiBackend/browser/streamingParser.js';
+
+// Additional Conversation Services
+import { IConversationSummarization } from '../../../services/erdosAiConversation/common/conversationSummarization.js';
+import { ConversationSummarization } from '../../../services/erdosAiConversation/browser/conversationSummarization.js';
+import { IMessageIdManager } from '../../../services/erdosAiConversation/common/messageIdManager.js';
+import { MessageIdManager } from '../../../services/erdosAiConversation/browser/messageIdManager.js';
+import { IMessageStore } from '../../../services/erdosAiConversation/common/messageStore.js';
+import { MessageStore } from '../../../services/erdosAiConversation/browser/messageStore.js';
+
+// Additional Document Services (consolidated into DocumentManager)
+
+// Additional Function Services
+import { IInfrastructureRegistry } from '../../../services/erdosAiFunctions/common/infrastructureRegistry.js';
+import { InfrastructureRegistry } from '../../../services/erdosAiFunctions/browser/infrastructureRegistry.js';
+
+// Integration Services
+import { IJupytextService as IJupytextServiceNew } from '../../../services/erdosAiIntegration/common/jupytextService.js';
+import { JupytextService as JupytextServiceNew } from '../../../services/erdosAiIntegration/browser/jupytextService.js';
+import { IOAuthCallbackService } from '../../../services/erdosAiIntegration/common/oauthCallbackService.js';
+import { OAuthCallbackService } from '../../../services/erdosAiIntegration/browser/oauthCallbackService.js';
+
+// Media Services
+import { IImageAttachmentService } from '../../../services/erdosAiMedia/common/imageAttachmentService.js';
+import { ImageAttachmentService } from '../../../services/erdosAiMedia/browser/imageAttachmentService.js';
+import { IImageProcessingManager } from '../../../services/erdosAiMedia/common/imageProcessingManager.js';
+import { ImageProcessingManager } from '../../../services/erdosAiMedia/browser/imageProcessingManager.js';
+
+// Utility Services (that need DI)
+import { ICommonUtils } from '../../../services/erdosAiUtils/common/commonUtils.js';
+import { CommonUtils } from '../../../services/erdosAiUtils/browser/commonUtils.js';
+import { IFileSystemUtils } from '../../../services/erdosAiUtils/common/fileSystemUtils.js';
+import { FileSystemUtils } from '../../../services/erdosAiUtils/browser/fileSystemUtils.js';
+import { ISettingsUtils } from '../../../services/erdosAiUtils/common/settingsUtils.js';
+import { SettingsUtils } from '../../../services/erdosAiUtils/browser/settingsUtils.js';
+import { IOutputLimiter } from '../../../services/erdosAiUtils/common/outputLimiter.js';
+import { OutputLimiter } from '../../../services/erdosAiUtils/browser/outputLimiter.js';
+import { IRMarkdownParser } from '../../../services/erdosAiUtils/common/rMarkdownParser.js';
+import { RMarkdownParser } from '../../../services/erdosAiUtils/browser/rMarkdownParser.js';
+import { IErdosAiMarkdownRenderer } from '../../../services/erdosAiUtils/common/erdosAiMarkdownRenderer.js';
+import { ErdosAiMarkdownRendererService } from '../../../services/erdosAiUtils/browser/erdosAiMarkdownRenderer.js';
+import { IFileResolverService } from '../../../services/erdosAiUtils/common/fileResolverService.js';
+import { FileResolverService } from '../../../services/erdosAiUtils/browser/fileResolverService.js';
+import { IFileContentService } from '../../../services/erdosAiUtils/common/fileContentService.js';
+import { FileContentService } from '../../../services/erdosAiUtils/browser/fileContentService.js';
+import { IHelpContentService } from '../../../services/erdosAiUtils/common/helpContentService.js';
+import { HelpContentService } from '../../../services/erdosAiUtils/browser/helpContentService.js';
+import { SecurityAnalyticsContribution } from './securityAnalytics.contribution.js';
+
+// New Parallel Function System
+import { IParallelFunctionBranchManager } from '../../../services/erdosAi/browser/parallelFunctionBranchManager.js';
+import { ParallelFunctionBranchManager } from '../../../services/erdosAi/browser/parallelFunctionBranchManager.js';
+import { IFunctionBranchExecutor } from '../../../services/erdosAiFunctions/common/functionBranchExecutor.js';
+import { FunctionBranchExecutor } from '../../../services/erdosAiFunctions/browser/functionBranchExecutor.js';
+import { IWidgetManager } from '../../../services/erdosAi/common/widgetManager.js';
+import { WidgetManager } from '../../../services/erdosAi/browser/widgetManager.js';
+import { ITextStreamHandler } from '../../../services/erdosAi/common/textStreamHandler.js';
+import { TextStreamHandler } from '../../../services/erdosAi/browser/textStreamHandler.js';
+import { INonInteractiveFunctionExecutor } from '../../../services/erdosAiFunctions/common/nonInteractiveFunctionExecutor.js';
+import { NonInteractiveFunctionExecutor } from '../../../services/erdosAiFunctions/browser/nonInteractiveFunctionExecutor.js';
+import { IInteractiveFunctionExecutor } from '../../../services/erdosAiFunctions/common/interactiveFunctionExecutor.js';
+import { InteractiveFunctionExecutor } from '../../../services/erdosAiFunctions/browser/interactiveFunctionExecutor.js';
+import { IStreamingOrchestrator } from '../../../services/erdosAi/common/streamingOrchestrator.js';
+import { StreamingOrchestrator } from '../../../services/erdosAi/browser/streamingOrchestrator.js';
+
+registerSingleton(IErdosAiAuthService, ErdosAiAuthService, InstantiationType.Delayed);
+registerSingleton(IErdosAiRulesService, ErdosAiRulesService, InstantiationType.Delayed);
+registerSingleton(IErdosAiNameService, ErdosAiNameService, InstantiationType.Delayed);
+registerSingleton(IBackendClient, new SyncDescriptor(BackendClient));
+
+registerSingleton(IFunctionCallService, FunctionCallHandler, InstantiationType.Delayed);
+registerSingleton(IDocumentManager, DocumentManager, InstantiationType.Delayed);
+registerSingleton(IConversationManager, ConversationManager, InstantiationType.Delayed);
+registerSingleton(IConversationSaveMutex, ConversationSaveMutex, InstantiationType.Delayed);
+registerSingleton(IApiKeyManager, ApiKeyManager, InstantiationType.Delayed);
+registerSingleton(IConsoleCommandHandler, ConsoleCommandHandler, InstantiationType.Delayed);
+registerSingleton(ITerminalCommandHandler, TerminalCommandHandler, InstantiationType.Delayed);
+registerSingleton(IFileCommandHandler, FileCommandHandler, InstantiationType.Delayed);
+registerSingleton(ISearchReplaceCommandHandler, SearchReplaceCommandHandler, InstantiationType.Delayed);
+registerSingleton(IDeleteFileCommandHandler, DeleteFileCommandHandler, InstantiationType.Delayed);
+registerSingleton(IAutoAcceptHandler, AutoAcceptHandler, InstantiationType.Delayed);
+registerSingleton(IFunctionParserService, FunctionParserService, InstantiationType.Delayed);
+registerSingleton(IAutoAcceptService, AutoAcceptService, InstantiationType.Delayed);
+registerSingleton(ISessionManagement, SessionManagement, InstantiationType.Delayed);
+registerSingleton(IFunctionMessageManager, FunctionMessageManager, InstantiationType.Delayed);
+registerSingleton(IErdosAiSettingsService, ErdosAiSettingsService, InstantiationType.Delayed);
+registerSingleton(IMessageReversion, MessageReversion, InstantiationType.Delayed);
+registerSingleton(IFileChangeTracker, FileChangeTracker, InstantiationType.Delayed);
+registerSingleton(IContextService, ContextService, InstantiationType.Delayed);
+registerSingleton(IConversationUtilities, ConversationUtilities, InstantiationType.Delayed);
+registerSingleton(IConversationVariableManager, ConversationVariableManager, InstantiationType.Delayed);
+
+// Register Additional Services
+registerSingleton(IThinkingProcessor, ThinkingProcessor, InstantiationType.Delayed);
+registerSingleton(ISSEParser, SSEParser, InstantiationType.Delayed);
+registerSingleton(IConversationSummarization, ConversationSummarization, InstantiationType.Delayed);
+registerSingleton(IMessageIdManager, MessageIdManager, InstantiationType.Delayed);
+registerSingleton(IMessageStore, MessageStore, InstantiationType.Delayed);
+registerSingleton(IInfrastructureRegistry, InfrastructureRegistry, InstantiationType.Delayed);
+registerSingleton(IJupytextServiceNew, JupytextServiceNew, InstantiationType.Delayed);
+registerSingleton(IOAuthCallbackService, OAuthCallbackService, InstantiationType.Delayed);
+registerSingleton(IImageAttachmentService, ImageAttachmentService, InstantiationType.Delayed);
+registerSingleton(IImageProcessingManager, ImageProcessingManager, InstantiationType.Delayed);
+registerSingleton(ICommonUtils, CommonUtils, InstantiationType.Delayed);
+registerSingleton(IFileSystemUtils, FileSystemUtils, InstantiationType.Delayed);
+registerSingleton(ISettingsUtils, SettingsUtils, InstantiationType.Delayed);
+registerSingleton(IOutputLimiter, OutputLimiter, InstantiationType.Delayed);
+registerSingleton(IRMarkdownParser, RMarkdownParser, InstantiationType.Delayed);
+registerSingleton(IErdosAiMarkdownRenderer, ErdosAiMarkdownRendererService, InstantiationType.Delayed);
+registerSingleton(IFileResolverService, FileResolverService, InstantiationType.Delayed);
+registerSingleton(IFileContentService, FileContentService, InstantiationType.Delayed);
+registerSingleton(IHelpContentService, HelpContentService, InstantiationType.Delayed);
+
+// Register New Parallel Function System
+registerSingleton(IParallelFunctionBranchManager, ParallelFunctionBranchManager, InstantiationType.Delayed);
+registerSingleton(IFunctionBranchExecutor, FunctionBranchExecutor, InstantiationType.Delayed);
+registerSingleton(IWidgetManager, new SyncDescriptor(WidgetManager));
+registerSingleton(ITextStreamHandler, TextStreamHandler, InstantiationType.Delayed);
+registerSingleton(IStreamingOrchestrator, StreamingOrchestrator, InstantiationType.Delayed);
+registerSingleton(INonInteractiveFunctionExecutor, NonInteractiveFunctionExecutor, InstantiationType.Delayed);
+registerSingleton(IInteractiveFunctionExecutor, InteractiveFunctionExecutor, InstantiationType.Delayed);
+
+// Register ErdosAiServiceCore LAST - it depends on almost everything above
+registerSingleton(IErdosAiServiceCore, new SyncDescriptor(ErdosAiServiceCore));
+
+const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
+configurationRegistry.registerConfiguration({
+	id: 'erdosAi',
+	title: nls.localize('erdosAiConfigurationTitle', "Erdos AI"),
+	type: 'object',
+	properties: {
+		'erdosAi.temperature': {
+			type: 'number',
+			default: 0.5,
+			minimum: 0.0,
+			maximum: 1.0,
+			description: nls.localize('erdosAi.temperature', "Controls the AI model temperature (creativity vs determinism). 0.0 = deterministic, 1.0 = highly creative."),
+			order: 1
+		},
+		'erdosAi.securityMode': {
+			type: 'string',
+			default: 'improve',
+			enum: ['secure', 'improve'],
+			enumDescriptions: [
+				nls.localize('erdosAi.securityMode.secure', "Secure mode (recommended) - prioritizes privacy and security"),
+				nls.localize('erdosAi.securityMode.improve', "Improve service mode - allows data to be used for service improvement")
+			],
+			description: nls.localize('erdosAi.securityMode', "Controls the security and data usage mode for AI interactions."),
+			order: 2
+		},
+		'erdosAi.webSearchEnabled': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.webSearchEnabled', "Enable web search capabilities for the AI assistant."),
+			order: 3
+		},
+				'erdosAi.autoAcceptEdits': {
+					type: 'boolean',
+					default: false,
+					description: nls.localize('erdosAi.autoAcceptEdits', "Automatically accept AI-proposed file edits without manual confirmation."),
+					order: 4
+				},
+				'erdosAi.autoAcceptDeletes': {
+					type: 'boolean',
+					default: false,
+					description: nls.localize('erdosAi.autoAcceptDeletes', "Automatically accept AI-proposed file deletions without manual confirmation."),
+					order: 5
+				},
+		'erdosAi.autoAcceptConsole': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.autoAcceptConsole', "Automatically accept R console commands if all functions are in the allow list."),
+			order: 5
+		},
+		'erdosAi.autoAcceptTerminal': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.autoAcceptTerminal', "Automatically accept terminal commands based on allow/deny list settings."),
+			order: 6
+		},
+		'erdosAi.terminalAutoAcceptMode': {
+			type: 'string',
+			default: 'allow-list',
+			enum: ['allow-list', 'deny-list'],
+			enumDescriptions: [
+				nls.localize('erdosAi.terminalAutoAcceptMode.allowList', "Allow-list mode - only commands in the allow list will be auto-accepted"),
+				nls.localize('erdosAi.terminalAutoAcceptMode.denyList', "Deny-list mode - commands will be auto-accepted unless they are in the deny list")
+			],
+			description: nls.localize('erdosAi.terminalAutoAcceptMode', "Controls whether terminal auto-accept uses an allow list or deny list approach."),
+			order: 7
+		},
+		'erdosAi.terminalAllowList': {
+			type: 'array',
+			items: {
+				type: 'string'
+			},
+			default: [],
+			description: nls.localize('erdosAi.terminalAllowList', "List of terminal commands that are allowed to be auto-accepted when in allow-list mode."),
+			order: 8
+		},
+		'erdosAi.terminalDenyList': {
+			type: 'array',
+			items: {
+				type: 'string'
+			},
+			default: [],
+			description: nls.localize('erdosAi.terminalDenyList', "List of terminal commands that are denied from being auto-accepted when in deny-list mode."),
+			order: 9
+		},
+		'erdosAi.consoleAutoAcceptMode': {
+			type: 'string',
+			default: 'allow-list',
+			enum: ['allow-list', 'deny-list'],
+			enumDescriptions: [
+				nls.localize('erdosAi.consoleAutoAcceptMode.allowList', "Allow-list mode - only functions in the allow list will be auto-accepted"),
+				nls.localize('erdosAi.consoleAutoAcceptMode.denyList', "Deny-list mode - functions will be auto-accepted unless they are in the deny list")
+			],
+			description: nls.localize('erdosAi.consoleAutoAcceptMode', "Controls whether console auto-accept uses an allow list or deny list approach."),
+			order: 10
+		},
+		'erdosAi.consoleLanguageFilter': {
+			type: 'string',
+			default: 'both',
+			enum: ['both', 'python', 'r'],
+			enumDescriptions: [
+				nls.localize('erdosAi.consoleLanguageFilter.both', "Both Python and R"),
+				nls.localize('erdosAi.consoleLanguageFilter.python', "Python only"),
+				nls.localize('erdosAi.consoleLanguageFilter.r', "R only")
+			],
+			description: nls.localize('erdosAi.consoleLanguageFilter', "Controls which languages are included in console auto-accept."),
+			order: 11
+		},
+		'erdosAi.consoleAllowList': {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					function: { type: 'string' },
+					language: { type: 'string', enum: ['python', 'r'] }
+				},
+				required: ['function', 'language']
+			},
+			default: [],
+			description: nls.localize('erdosAi.consoleAllowList', "List of console functions with their languages that are allowed to be auto-accepted when in allow-list mode. Format: [{function: 'print', language: 'python'}]"),
+			order: 12
+		},
+		'erdosAi.consoleDenyList': {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					function: { type: 'string' },
+					language: { type: 'string', enum: ['python', 'r'] }
+				},
+				required: ['function', 'language']
+			},
+			default: [],
+			description: nls.localize('erdosAi.consoleDenyList', "List of console functions with their languages that are denied from being auto-accepted when in deny-list mode. Format: [{function: 'print', language: 'python'}]"),
+			order: 13
+		},
+		'erdosAi.autoRunFiles': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.autoRunFiles', "Automatically run AI-proposed files on the allow list."),
+			order: 14
+		},
+		'erdosAi.autoDeleteFiles': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.autoDeleteFiles', "Automatically delete AI-proposed files on the allow list."),
+			order: 15
+		},
+
+		'erdosAi.autoRunFilesAllowAnything': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.autoRunFilesAllowAnything', "Allow automatic running of any file (unsafe)."),
+			order: 16
+		},
+		'erdosAi.autoDeleteFilesAllowAnything': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.autoDeleteFilesAllowAnything', "Allow automatic deletion of any file (unsafe)."),
+			order: 17
+		},
+
+		'erdosAi.runFilesAutomationList': {
+			type: 'array',
+			items: { type: 'string' },
+			default: [],
+			description: nls.localize('erdosAi.runFilesAutomationList', "List of file paths allowed for automation."),
+			order: 18
+		},
+		'erdosAi.deleteFilesAutomationList': {
+			type: 'array',
+			items: { type: 'string' },
+			default: [],
+			description: nls.localize('erdosAi.deleteFilesAutomationList', "List of file paths allowed for deletion automation."),
+			order: 19
+		},
+		'erdosAi.userRules': {
+			type: 'array',
+			items: {
+				type: 'string'
+			},
+			default: [],
+			description: nls.localize('erdosAi.userRules', "Custom rules and instructions for AI behavior."),
+			order: 17
+		},
+		'erdosAi.selectedModel': {
+			type: 'string',
+			default: 'claude-sonnet-4-5-20250929',
+			enum: [
+				'claude-sonnet-4-5-20250929',
+				'gpt-5-mini'
+			],
+			enumDescriptions: [
+				nls.localize('erdosAi.selectedModel.claude45', "claude-sonnet-4-5-20250929 (Superior coding and analysis - recommended)"),
+				nls.localize('erdosAi.selectedModel.gpt5', "gpt-5-mini (Reasoning tier)")
+			],
+			description: nls.localize('erdosAi.selectedModel', "Select the AI model to use for interactions."),
+			order: 18
+		},
+		'erdosAi.workingDirectory': {
+			type: 'string',
+			default: '',
+			description: nls.localize('erdosAi.workingDirectory', "Default working directory for AI operations."),
+			order: 19,
+			scope: ConfigurationScope.WINDOW
+		},
+		'erdosAi.byokAnthropicEnabled': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.byokAnthropicEnabled', "Enable Bring Your Own Key for Anthropic models."),
+			order: 20
+		},
+		'erdosAi.byokOpenAiEnabled': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.byokOpenAiEnabled', "Enable Bring Your Own Key for OpenAI models."),
+			order: 21
+		},
+		'erdosAi.byokSagemakerEnabled': {
+			type: 'boolean',
+			default: false,
+			description: nls.localize('erdosAi.byokSagemakerEnabled', "Enable SageMaker endpoint for AI models."),
+			order: 22
+		},
+		'erdosAi.sagemakerEndpointName': {
+			type: 'string',
+			default: '',
+			description: nls.localize('erdosAi.sagemakerEndpointName', "SageMaker endpoint name for model inference."),
+			order: 23
+		},
+		'erdosAi.sagemakerRegion': {
+			type: 'string',
+			default: 'us-east-1',
+			description: nls.localize('erdosAi.sagemakerRegion', "AWS region for SageMaker endpoint."),
+			order: 24
+		},
+		'erdosAi.interactionMode': {
+			type: 'string',
+			default: 'agent',
+			enum: ['ask', 'agent'],
+			enumDescriptions: [
+				nls.localize('erdosAi.interactionMode.ask', "Ask mode - for questions and conversations"),
+				nls.localize('erdosAi.interactionMode.agent', "Agent mode - for autonomous task execution")
+			],
+			description: nls.localize('erdosAi.interactionMode', "Controls the interaction mode for AI conversations."),
+			order: 25
+		}
+	}
+});
+
+const ERDOS_AI_CONTAINER_ID = 'workbench.view.erdos-ai';
+
+const erdosAiViewIcon = registerIcon('erdos-ai-view-icon', Codicon.brain, nls.localize('erdosAiViewIcon', 'View icon of the Erdos AI view.'));
+
+const erdosAiViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
+	id: ERDOS_AI_CONTAINER_ID,
+	title: nls.localize2('erdos.ai.viewContainer.label', "Erdos AI"),
+	icon: erdosAiViewIcon,
+	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [ERDOS_AI_CONTAINER_ID, { mergeViewWithContainerWhenSingleView: true }]),
+	storageId: ERDOS_AI_CONTAINER_ID,
+	hideIfEmpty: false,
+	order: 7,
+	openCommandActionDescriptor: {
+		id: 'workbench.action.toggleErdosAi',
+		mnemonicTitle: nls.localize({ key: 'miToggleErdosAi', comment: ['&& denotes a mnemonic'] }, "&&Erdos AI"),
+		keybindings: {
+			primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyP
+		},
+		order: 7,
+	}
+}, ViewContainerLocation.Sidebar, { isDefault: true, doNotRegisterOpenCommand: false });
+
+Registry.as<IViewsRegistry>(ViewContainerExtensions.ViewsRegistry).registerViews(
+	[
+		{
+			id: ERDOS_AI_VIEW_ID,
+			name: {
+				value: nls.localize('erdos.ai.view.name', "Erdos AI"),
+				original: 'Erdos AI'
+			},
+			ctorDescriptor: new SyncDescriptor(ErdosAiViewPane),
+			canToggleVisibility: false,
+			canMoveView: true,
+			containerIcon: erdosAiViewIcon,
+			containerTitle: erdosAiViewContainer.title.value,
+		}
+	],
+	erdosAiViewContainer
+);
+
+/**
+ * Erdos AI workbench contribution for registering actions and commands
+ */
+class ErdosAiContribution extends Disposable implements IWorkbenchContribution {
+	constructor() {
+		super();
+
+		this.registerActions();
+	}
+
+	private registerActions(): void {
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'erdos.ai.newConversation',
+					title: nls.localize2('erdos.ai.newConversation', 'New Conversation'),
+					category: nls.localize2('erdos.ai.category', 'Erdos AI'),
+					f1: true
+				});
+			}
+
+			async run(accessor: ServicesAccessor): Promise<void> {
+				const erdosAiService = accessor.get(IErdosAiServiceCore);
+				await erdosAiService.newConversation();
+			}
+		});
+
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'erdos.ai.openSettings',
+					title: nls.localize2('erdos.ai.openSettings', 'Open Erdos AI Settings'),
+					category: nls.localize2('erdos.ai.category', 'Erdos AI'),
+					f1: true
+				});
+			}
+
+			async run(accessor: ServicesAccessor): Promise<void> {
+				const preferencesService = accessor.get(IPreferencesService);
+				await preferencesService.openSettings({ query: 'erdosAi' });
+			}
+		});
+
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'erdos.ai.newConversation.viewTitle',
+					title: nls.localize2('erdos.ai.newConversation.viewTitle', 'New Chat'),
+					icon: Codicon.add,
+					menu: {
+						id: MenuId.ViewTitle,
+						when: ContextKeyExpr.equals('view', ERDOS_AI_VIEW_ID),
+						group: 'navigation',
+						order: 1
+					}
+				});
+			}
+
+			async run(accessor: ServicesAccessor): Promise<void> {
+				const erdosAiServiceCore = accessor.get(IErdosAiServiceCore);
+				await erdosAiServiceCore.newConversation();
+			}
+		});
+
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'erdos.ai.showHistory.viewTitle',
+					title: nls.localize2('erdos.ai.showHistory.viewTitle', 'Show Chats...'),
+					icon: Codicon.history,
+					menu: {
+						id: MenuId.ViewTitle,
+						when: ContextKeyExpr.equals('view', ERDOS_AI_VIEW_ID),
+						group: 'navigation',
+						order: 2
+					}
+				});
+			}
+
+			async run(accessor: ServicesAccessor): Promise<void> {
+				const erdosAiServiceCore = accessor.get(IErdosAiServiceCore);
+				await erdosAiServiceCore.showConversationHistory();
+			}
+		});
+
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'erdos.ai.openSettings.viewTitle',
+					title: nls.localize2('erdos.ai.openSettings.viewTitle', 'Configure Chat...'),
+					icon: Codicon.settingsGear,
+					menu: {
+						id: MenuId.ViewTitle,
+						when: ContextKeyExpr.equals('view', ERDOS_AI_VIEW_ID),
+						group: 'navigation',
+						order: 3
+					}
+				});
+			}
+
+			async run(accessor: ServicesAccessor): Promise<void> {
+				const erdosAiServiceCore = accessor.get(IErdosAiServiceCore);
+				await erdosAiServiceCore.showSettings();
+			}
+		});
+
+		// Register function parser command
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'erdosAi.parseFunctions',
+					title: 'Parse Functions',
+					category: 'Erdos AI'
+				});
+			}
+
+			async run(accessor: ServicesAccessor, code: string, language: string): Promise<{ functions: string[], success: boolean, error?: string }> {
+				const functionParserService = accessor.get(IFunctionParserService);
+				return await functionParserService.parseFunctions(code, language);
+			}
+		});
+	}
+}
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+	ErdosAiContribution,
+	LifecyclePhase.Restored
+);
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+	SecurityAnalyticsContribution,
+	LifecyclePhase.Restored
+);
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+	AutoAcceptEditorOverlay,
+	LifecyclePhase.Restored
+);
