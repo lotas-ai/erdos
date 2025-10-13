@@ -371,11 +371,6 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 			}
 		}
 
-		const quartoBinPath = path.join(root, 'extensions', 'quarto', 'bin');
-		if (!fs.existsSync(quartoBinPath)) {
-			throw new Error(`Quarto CLI binaries were not found at ${quartoBinPath}. Run "npm run compile-quarto" before packaging.`);
-		}
-
 		const quartoNodeModules = path.join(quartoExtensionBuildRoot, 'node_modules');
 		const erdosUriSource = path.join(root, 'node_modules', 'erdos-uri');
 		if (!fs.existsSync(erdosUriSource)) {
@@ -386,20 +381,40 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 		fs.rmSync(vscodeUriTarget, { recursive: true, force: true });
 		copyDirectoryRecursiveSync(erdosUriSource, vscodeUriTarget);
 
-		const quartoExecutablePatterns = [
-			'quarto/bin/**/quarto',
-			'quarto/bin/**/pandoc',
-			'quarto/bin/**/dart',
-			'quarto/bin/**/deno',
-			'quarto/bin/**/esbuild',
-			'quarto/bin/**/sass',
-			'quarto/bin/**/typst'
-		];
-
-		const quarto = gulp.src('extensions/quarto/bin/**', { base: 'extensions/quarto/bin', dot: true })
-			.pipe(rename(function (p) { p.dirname = path.join('quarto', p.dirname); }))
-			.pipe(filter(['**', '!**/.DS_Store', '!**/._*']))
-			.pipe(util.setExecutableBit(quartoExecutablePatterns));
+		// Bundle standalone Quarto CLI for this platform
+		const platformArch = arch === 'armhf' ? 'arm64' : arch;
+		const quartoStandalonePath = path.join(root, 'quarto', `${platform}-${platformArch}`);
+		
+		let quartoStandalone;
+		if (fs.existsSync(quartoStandalonePath)) {
+			console.log(`[quarto] Bundling standalone Quarto CLI from ${quartoStandalonePath}`);
+			
+			const quartoExecutablePatterns = [
+				'quarto/bin/**/quarto',
+				'quarto/bin/**/quarto.exe',
+				'quarto/bin/**/pandoc',
+				'quarto/bin/**/pandoc.exe',
+				'quarto/bin/**/dart',
+				'quarto/bin/**/deno',
+				'quarto/bin/**/deno.exe',
+				'quarto/bin/**/esbuild',
+				'quarto/bin/**/esbuild.exe',
+				'quarto/bin/**/sass',
+				'quarto/bin/**/sass.exe',
+				'quarto/bin/**/typst',
+				'quarto/bin/**/typst.exe'
+			];
+			
+			quartoStandalone = gulp.src(`${quartoStandalonePath}/**`, { base: quartoStandalonePath, dot: true })
+				.pipe(rename(function (p) { p.dirname = path.join('quarto', p.dirname); }))
+				.pipe(filter(['**', '!**/.DS_Store', '!**/._*']))
+				.pipe(util.setExecutableBit(quartoExecutablePatterns));
+		} else {
+			console.warn(`[quarto] WARNING: Standalone Quarto CLI not found at ${quartoStandalonePath}`);
+			console.warn(`[quarto] Run "npm run download-quarto-standalone" before packaging.`);
+			// Create empty stream so build doesn't fail
+			quartoStandalone = es.readArray([]);
+		}
 
 		let all = es.merge(
 			packageJsonStream,
@@ -411,7 +426,7 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 			deps,
 			moduleSources,
 			erdosApi,
-			quarto
+			quartoStandalone
 		);
 
 		if (platform === 'win32') {
