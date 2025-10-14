@@ -1279,6 +1279,8 @@ class AccessibiltyRenderer<T> implements IListRenderer<T, IAccessibilityTemplate
 	}
 
 	renderElement(element: T, index: number, data: IAccessibilityTemplateData): void {
+		data.disposables.clear();
+
 		const ariaLabel = this.accessibilityProvider.getAriaLabel(element);
 		const observable = (ariaLabel && typeof ariaLabel !== 'string') ? ariaLabel : constObservable(ariaLabel);
 

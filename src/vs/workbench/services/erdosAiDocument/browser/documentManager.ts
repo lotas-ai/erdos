@@ -47,9 +47,10 @@ export class DocumentManager extends Disposable implements IDocumentManager {
 		
 		if (fileExtension === 'ipynb') {
 			try {
+				const options = this.jupytextService.getNotebookJupytextOptions(content);
 				const convertedContent = this.jupytextService.convertNotebookToText(
 					content, 
-					{ extension: '.py', format_name: 'percent' }
+					options
 				);
 				
 				return convertedContent;

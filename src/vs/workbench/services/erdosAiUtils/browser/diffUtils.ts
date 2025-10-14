@@ -322,7 +322,8 @@ class DiffStorage {
 		messageId: string, 
 		filePath: string,
 		effectiveContent: string,  // The full old Jupytext content
-		replaceAll: boolean = false  // Whether to replace all occurrences
+		replaceAll: boolean = false,  // Whether to replace all occurrences
+		jupytextOptions: { extension: string; format_name: string } = { extension: '.py', format_name: 'percent' }  // Jupytext format options
 	): Promise<void> {
 		try {
 			// 1. Full old Jupytext content (already have this)
@@ -338,7 +339,7 @@ class DiffStorage {
 			const newLines = fullNewJupytext === '' ? [] : fullNewJupytext.split('\n');
 			
 			// 3. Get jupytext line mapping using the same reads function as fileContentService.ts
-			const parseResult = reads(fullNewJupytext, { extension: '.py', format_name: 'percent' }, 4, null, true);
+			const parseResult = reads(fullNewJupytext, jupytextOptions, 4, null, true);
 			
 			if (typeof parseResult !== 'object' || !('cellLineMap' in parseResult) || !parseResult.cellLineMap) {
 				throw new Error('Failed to get jupytext line mapping from reads function');

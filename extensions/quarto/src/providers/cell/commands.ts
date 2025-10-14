@@ -74,15 +74,24 @@ abstract class RunCommand {
     // Only source editor (standard VS Code text editor) is supported
     const editor = window.activeTextEditor;
     const doc = editor?.document;
+    
+    // When called from menu, VSCode passes URI object as first arg - ignore it
+    // Only use line if it's actually a number
+    if (typeof line !== 'number') {
+      line = undefined;
+    }
+    
     if (doc && isQuartoDoc(doc)) {
       const tokens = this.engine_.parse(doc);
-      line = line || editor.selection.start.line;
+      line = line !== undefined ? line : editor.selection.start.line;
+      
       if (this.blockRequired()) {
         const block = languageBlockAtPosition(
           tokens,
           new Position(line, 0),
           this.includeFence()
         );
+        
         if (block) {
           const language = languageNameFromBlock(block);
           if (await this.hasExecutorForLanguage(language, doc, this.engine_)) {

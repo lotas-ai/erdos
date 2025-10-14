@@ -43,13 +43,14 @@ export class FileContentService extends Disposable implements IFileContentServic
 					const notebook = JSON.parse(fileContent);
 					
 					// Convert to jupytext to get line mapping
+					const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
 					const jupytextContent = this.jupytextService.convertNotebookToText(
 						fileContent, 
-						{ extension: '.py', format_name: 'percent' }
+						options
 					);
 										
 					// Parse jupytext back to cells with line tracking using enhanced reads function
-					const parseResult = reads(jupytextContent, { extension: '.py', format_name: 'percent' }, 4, null, true);
+					const parseResult = reads(jupytextContent, options, 4, null, true);
 					
 					if (typeof parseResult === 'object' && 'cellLineMap' in parseResult) {
 						// Find cells that intersect with the requested line range, or all cells if no range specified
@@ -112,9 +113,10 @@ export class FileContentService extends Disposable implements IFileContentServic
 						return result;
 					} catch (parseError) {
 						// If all else fails, fall back to regular jupytext processing
+						const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
 						const convertedContent = this.jupytextService.convertNotebookToText(
 							fileContent, 
-							{ extension: '.py', format_name: 'percent' }
+							options
 						);
 						fileContent = convertedContent;
 					}
@@ -124,9 +126,10 @@ export class FileContentService extends Disposable implements IFileContentServic
 			// Convert .ipynb files to jupytext format before any line processing (fallback case)
 			if (this.commonUtils.getFileExtension(filename).toLowerCase() === 'ipynb') {
 				try {
+					const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
 					const convertedContent = this.jupytextService.convertNotebookToText(
 						fileContent, 
-						{ extension: '.py', format_name: 'percent' }
+						options
 					);
 					
 					fileContent = convertedContent;

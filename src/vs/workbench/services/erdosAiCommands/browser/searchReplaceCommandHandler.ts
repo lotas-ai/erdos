@@ -256,6 +256,7 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 			
 			let isCreateMode = false;
 			let isAppendMode = false;
+			let jupytextOptions = { extension: '.py', format_name: 'percent' };
 			
 			if (oldString === '') {
 				const effectiveContent = await this.documentManager.getEffectiveFileContent(filePath);
@@ -271,9 +272,10 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 					if (isNotebookAppend) {
 						try {
 							// Convert original JSON to jupytext format for appending
+							const options = this.jupytextService.getNotebookJupytextOptions(currentContent);
 							const jupytextContent = this.jupytextService.convertNotebookToText(
 								currentContent, 
-								{ extension: '.py', format_name: 'percent' }
+								options
 							);
 							workingContent = jupytextContent;
 						} catch (error) {
@@ -323,25 +325,26 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 					uri = fileResult.uri;
 				}
 				
-				// For .ipynb files, we need to work with jupytext format for the search/replace
-				// but keep the original JSON for storage
-				const isNotebook = this.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
-				let workingContent = currentContent;
-				
-				if (isNotebook) {
-					try {
-						// Convert original JSON to jupytext format for processing
-						const jupytextContent = this.jupytextService.convertNotebookToText(
-							currentContent, 
-							{ extension: '.py', format_name: 'percent' }
-						);
-						workingContent = jupytextContent;
-					} catch (error) {
-						console.error(`[SEARCH_REPLACE_COMMAND_DEBUG] Failed to convert notebook to jupytext:`, error);
-						this.logService.error('Failed to convert notebook to jupytext for search/replace:', error);
-						// Continue with original content if conversion fails
-					}
+			// For .ipynb files, we need to work with jupytext format for the search/replace
+			// but keep the original JSON for storage
+			const isNotebook = this.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
+			let workingContent = currentContent;
+			
+			if (isNotebook) {
+				try {
+					// Convert original JSON to jupytext format for processing
+					jupytextOptions = this.jupytextService.getNotebookJupytextOptions(currentContent);
+					const jupytextContent = this.jupytextService.convertNotebookToText(
+						currentContent, 
+						jupytextOptions
+					);
+					workingContent = jupytextContent;
+				} catch (error) {
+					console.error(`[SEARCH_REPLACE_COMMAND_DEBUG] Failed to convert notebook to jupytext:`, error);
+					this.logService.error('Failed to convert notebook to jupytext for search/replace:', error);
+					// Continue with original content if conversion fails
 				}
+			}
 				
 				const flexiblePattern = this.createFlexibleWhitespacePattern(oldString);
 				const regex = new RegExp(flexiblePattern, 'g');
@@ -359,7 +362,7 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 				// For notebooks, newContent is in jupytext format - convert to notebook structure
 				const notebookJson = this.jupytextService.convertTextToNotebook(
 					newContent, 
-					{ extension: '.py', format_name: 'percent' }
+					jupytextOptions
 				);
 				processedContent = notebookJson;
 				
@@ -885,12 +888,14 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 				
 				// Convert .ipynb files to jupytext format for create/append mode processing
 				const isNotebook = this.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
+				let jupytextOptions = { extension: '.py', format_name: 'percent' };
 				
 				if (effectiveContent && isNotebook) {
 					try {
+						jupytextOptions = this.jupytextService.getNotebookJupytextOptions(effectiveContent);
 						const convertedContent = this.jupytextService.convertNotebookToText(
 							effectiveContent, 
-							{ extension: '.py', format_name: 'percent' }
+							jupytextOptions
 						);
 						effectiveContent = convertedContent;
 					} catch (error) {
@@ -917,7 +922,8 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 						messageId.toString(),
 						filePath,
 						currentContent,  // This is the old content (might be empty for new files)
-						false  // Not replace_all
+						false,  // Not replace_all
+						jupytextOptions  // Pass the notebook's language options
 					);
 				} else {
 					// Regular file creation uses regular diff
@@ -957,12 +963,14 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 
 			// Convert .ipynb files to jupytext format for pattern matching (same as SearchReplaceHandler)
 			const isNotebook = this.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
+			let jupytextOptions = { extension: '.py', format_name: 'percent' };
 			
 			if (isNotebook) {
 				try {
+					jupytextOptions = this.jupytextService.getNotebookJupytextOptions(effectiveContent);
 					const convertedContent = this.jupytextService.convertNotebookToText(
 						effectiveContent, 
-						{ extension: '.py', format_name: 'percent' }
+						jupytextOptions
 					);
 					effectiveContent = convertedContent;
 				} catch (error) {
@@ -1039,7 +1047,7 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 			if (isNotebook) {
 				// Use notebook-specific diff computation from diffStorage
 				diffStore.setConversationManager(this.conversationManager);
-				await diffStore.storeNotebookDiff(oldString, newString, messageId.toString(), filePath, effectiveContent, replaceAll);
+				await diffStore.storeNotebookDiff(oldString, newString, messageId.toString(), filePath, effectiveContent, replaceAll, jupytextOptions);
 			} else {
 				// Use the shared diff computation logic
 				await this.computeAndStoreDiff(effectiveContent, newContent, messageId, filePath, oldString, newString, replaceAll);
@@ -1368,12 +1376,14 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 				const isNewFile = effectiveContent === null;
 				
 				const isNotebook = context.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
+				let jupytextOptions = { extension: '.py', format_name: 'percent' };
 				
 				if (effectiveContent !== null && isNotebook) {
 					try {
+						jupytextOptions = context.jupytextService.getNotebookJupytextOptions(effectiveContent);
 						const convertedContent = context.jupytextService.convertNotebookToText(
 							effectiveContent, 
-							{ extension: '.py', format_name: 'percent' }
+							jupytextOptions
 						);
 						effectiveContent = convertedContent;
 					} catch (error) {
@@ -1472,12 +1482,14 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 			let originalContent = effectiveContent;
 			
 			const isNotebook = context.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
+			let jupytextOptions = { extension: '.py', format_name: 'percent' };
 			
 			if (effectiveContent !== null && isNotebook) {
 				try {
+					jupytextOptions = context.jupytextService.getNotebookJupytextOptions(effectiveContent);
 					const convertedContent = context.jupytextService.convertNotebookToText(
 						effectiveContent, 
-						{ extension: '.py', format_name: 'percent' }
+						jupytextOptions
 					);
 					effectiveContent = convertedContent;
 				} catch (error) {

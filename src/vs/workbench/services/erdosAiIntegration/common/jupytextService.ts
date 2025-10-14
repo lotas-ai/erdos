@@ -17,6 +17,7 @@ export interface IJupytextService {
 	
 	convertNotebookToText(notebookContent: string, options: JupytextOptions): string;
 	convertTextToNotebook(textContent: string, options: JupytextOptions): string;
+	getNotebookJupytextOptions(notebookContent: string): JupytextOptions;
 }
 
 /**

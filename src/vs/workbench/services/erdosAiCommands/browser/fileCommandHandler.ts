@@ -291,9 +291,10 @@ export class FileCommandHandler extends Disposable implements IFileCommandHandle
 				// For execution, we skip the cell extraction logic and go straight to jupytext conversion
 				// This is equivalent to the "fallback" path in the display function
 				try {
+					const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
 					const convertedContent = this.jupytextService.convertNotebookToText(
 						fileContent, 
-						{ extension: '.py', format_name: 'percent' }
+						options
 					);
 					
 					fileContent = convertedContent;
@@ -431,14 +432,15 @@ export class FileCommandHandler extends Disposable implements IFileCommandHandle
 			const originalNotebook = JSON.parse(fileContent);
 			
 			// Convert notebook to jupytext format to get the line mapping
+			const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
 			const jupytextContent = this.jupytextService.convertNotebookToText(
 				fileContent,
-				{ extension: '.py', format_name: 'percent' }
+				options
 			);
 			
 			// Use the reads function with line tracking to get the proper mapping
 			// This is the EXACT same logic that the display uses
-			const parseResult = reads(jupytextContent, { extension: '.py', format_name: 'percent' }, 4, null, true);
+			const parseResult = reads(jupytextContent, options, 4, null, true);
 
 			if (typeof parseResult === 'object' && 'cellLineMap' in parseResult && parseResult.cellLineMap) {
 				

@@ -49,9 +49,10 @@ export class ReadFileHandler extends BaseFunctionHandler {
 			// Convert .ipynb files to jupytext format before any line processing
 			if (context.commonUtils.getFileExtension(filename).toLowerCase() === 'ipynb') {
 				try {
+					const options = context.jupytextService.getNotebookJupytextOptions(effectiveContent);
 					const convertedContent = context.jupytextService.convertNotebookToText(
 						effectiveContent, 
-						{ extension: '.py', format_name: 'percent' }
+						options
 					);
 					
 					effectiveContent = convertedContent;

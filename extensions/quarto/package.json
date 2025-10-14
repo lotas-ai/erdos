@@ -242,7 +242,7 @@
       {
         "command": "quarto.preview",
         "title": "Preview",
-        "icon": "$(preview)",
+        "icon": "$(eye)",
         "category": "Quarto",
         "actionBarOptions": {
           "controlType": "button",
@@ -312,6 +312,7 @@
       {
         "command": "quarto.runCurrentCell",
         "title": "Run Cell",
+        "icon": "$(play)",
         "category": "Quarto"
       },
       {
@@ -326,17 +327,20 @@
       },
       {
         "command": "quarto.runCellsAbove",
-        "title": "Run Cells Above",
+        "title": "Run All Cells Above",
+        "icon": "$(play)",
         "category": "Quarto"
       },
       {
         "command": "quarto.runCellsBelow",
-        "title": "Run Cells Below",
+        "title": "Run All Cells Below",
+        "icon": "$(play)",
         "category": "Quarto"
       },
       {
         "command": "quarto.runAllCells",
         "title": "Run All Cells",
+        "icon": "$(play)",
         "category": "Quarto"
       },
       {
@@ -477,12 +481,12 @@
         "mac": "cmd+shift+f4",
         "when": "resourceScheme != untitled && editorLangId == quarto || resourceScheme != untitled && editorLangId == markdown"
       },
-      {
-        "command": "quarto.insertCodeCell",
-        "key": "ctrl+shift+i",
-        "mac": "cmd+shift+i",
-        "when": "editorTextFocus && editorLangId == quarto && !findInputFocussed && !replaceInputFocussed"
-      },
+        {
+          "command": "quarto.insertCodeCell",
+          "key": "ctrl+shift+i",
+          "mac": "cmd+shift+i",
+          "when": "editorTextFocus && (editorLangId == quarto || editorLangId == markdown) && !findInputFocussed && !replaceInputFocussed"
+        },
       {
         "command": "quarto.runSelection",
         "key": "alt+enter",
@@ -571,7 +575,7 @@
       "editor/actions/right": [
         {
           "command": "quarto.insertCodeCell",
-          "when": "editorLangId == quarto",
+          "when": "editorLangId == quarto || editorLangId == markdown",
           "group": "2_execute"
         }
       ],
@@ -590,47 +594,55 @@
       "editor/title": [
         {
           "command": "quarto.insertCodeCell",
-          "when": "editorLangId == quarto",
-          "group": "q_execute"
-        },
-        {
-          "command": "quarto.clearCache",
-          "when": "editorLangId == quarto",
-          "group": "q_execute"
-        },
-        {
-          "command": "quarto.editInVisualMode",
-          "when": "resourceScheme != untitled && editorLangId == quarto || resourceScheme != untitled && editorLangId == markdown",
-          "group": "q_switch"
+          "when": "editorLangId == quarto || editorLangId == markdown",
+          "group": "navigation@10"
         },
         {
           "command": "quarto.preview",
           "when": "editorLangId == quarto || editorLangId == markdown",
-          "group": "q_zPreview"
+          "group": "navigation@20"
+        },
+        {
+          "command": "quarto.clearCache",
+          "when": "editorLangId == quarto",
+          "group": "1_quarto"
+        },
+        {
+          "command": "quarto.editInVisualMode",
+          "when": "resourceScheme != untitled && editorLangId == quarto || resourceScheme != untitled && editorLangId == markdown",
+          "group": "1_quarto"
         },
         {
           "command": "quarto.previewScript",
           "when": "quartoRenderScriptActive",
-          "group": "q_zPreview"
+          "group": "navigation@20"
         },
         {
           "command": "quarto.previewFormat",
           "when": "editorLangId == quarto || editorLangId == markdown || activeCustomEditorId == 'quarto.visualEditor' || quartoRenderScriptActive",
-          "group": "q_zPreview"
+          "group": "1_quarto"
         }
       ],
       "editor/title/run": [
         {
-          "command": "quarto.preview",
-          "when": "editorLangId == quarto || editorLangId == markdown || activeCustomEditorId == 'quarto.visualEditor'"
+          "command": "quarto.runCurrentCell",
+          "group": "navigation@0",
+          "when": "editorLangId == quarto || editorLangId == markdown"
         },
         {
-          "command": "quarto.previewScript",
-          "when": "quartoRenderScriptActive"
+          "command": "quarto.runCellsAbove",
+          "group": "navigation@1",
+          "when": "editorLangId == quarto || editorLangId == markdown"
         },
         {
-          "command": "quarto.previewContentShortcut",
-          "when": "editorLangId == mermaid || editorLangId == dot"
+          "command": "quarto.runCellsBelow",
+          "group": "navigation@2",
+          "when": "editorLangId == quarto || editorLangId == markdown"
+        },
+        {
+          "command": "quarto.runAllCells",
+          "group": "navigation@3",
+          "when": "editorLangId == quarto || editorLangId == markdown"
         }
       ],
       "notebook/toolbar": [
@@ -718,7 +730,7 @@
         },
         {
           "command": "quarto.insertCodeCell",
-          "when": "editorLangId == quarto"
+          "when": "editorLangId == quarto || editorLangId == markdown"
         },
         {
           "command": "quarto.runSelection",

@@ -339,9 +339,10 @@ export class GrepHandler extends BaseFunctionHandler {
 				let searchContent = doc.content;
 				if (context.commonUtils.getFileExtension(display_path).toLowerCase() === 'ipynb') {
 					try {
+						const options = context.jupytextService.getNotebookJupytextOptions(doc.content);
 						searchContent = context.jupytextService.convertNotebookToText(
 							doc.content, 
-							{ extension: '.py', format_name: 'percent' }
+							options
 						);
 					} catch (error) {
 						// Fall back to original content if conversion fails

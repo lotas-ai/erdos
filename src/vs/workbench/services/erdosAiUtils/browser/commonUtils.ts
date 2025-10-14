@@ -285,6 +285,7 @@ export class CommonUtils extends Disposable implements ICommonUtils {
             'r': 'r',
             'rmd': 'r',
             'qmd': 'r',
+            'ipynb': 'jupyter',
             'java': 'java',
             'cpp': 'cpp',
             'cc': 'cpp',
