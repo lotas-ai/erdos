@@ -29,6 +29,8 @@ infrastructure-dev-guide-updated.md
 # Compiled JavaScript files
 src/**/*.js
 src/**/*.js.map
+# Exception for vendored third-party libraries
+!src/**/semver/semver.js
 
 # Temporary kernel files
 temp/kernels/
