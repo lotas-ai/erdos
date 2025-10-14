@@ -123,9 +123,7 @@ export class QuartoWebviewManager<T extends QuartoWebview<S>, S> {
       }
     );
 
-    const quartoWebview = new this.webviewType_(context, state, webview);
-
-    return quartoWebview;
+    return new this.webviewType_(context, state, webview);
   }
 
   private registerWebviewListeners(view: T) {

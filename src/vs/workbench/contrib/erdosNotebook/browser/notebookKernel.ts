@@ -68,7 +68,7 @@ export class ErdosNotebookKernel extends Disposable implements INotebookKernel {
 	}
 
 	get supportedLanguages(): string[] {
-		return [this.runtime.languageId, 'raw'];
+		return ['r', 'python', 'raw'];
 	}
 
 	async executeNotebookCellsRequest(notebookUri: URI, cellHandles: number[]): Promise<void> {

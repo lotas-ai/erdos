@@ -76,6 +76,20 @@ export function activateContextKeySetter(
     null,
     context.subscriptions
   );
+
+  // register toggle render on save command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('quarto.toggleRenderOnSave', () => {
+      toggleRenderOnSaveOverride();
+    })
+  );
+
+  // register toggle edit mode command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('quarto.toggleEditMode', () => {
+      toggleEditMode();
+    })
+  );
 }
 
 // gets render on save

@@ -84,8 +84,12 @@ export class ExtHostRuntime implements ExtHostRuntimeShape {
 		} as any));
 	}
 
-	async selectLanguageRuntime(runtimeId: string): Promise<void> {
-		await this._proxy.$selectLanguageRuntime(runtimeId);
+	async getPreferredRuntime(languageId: string): Promise<erdos.LanguageRuntimeMetadata | undefined> {
+		return await this._proxy.$getPreferredRuntime(languageId);
+	}
+
+	async selectLanguageRuntime(languageId: string): Promise<erdos.LanguageRuntimeMetadata | undefined> {
+		return await this.getPreferredRuntime(languageId);
 	}
 
 	async executeCode(

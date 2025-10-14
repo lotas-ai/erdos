@@ -20,6 +20,8 @@ export class NotebookCellExecution extends Disposable {
 	public readonly executionId = generateUuid();
 	private readonly _completionPromise = new DeferredPromise<void>();
 	private _completed = false;
+	private _accumulatedText: string = '';
+	private _textOutputId: string | undefined;
 
 	constructor(
 		private readonly _session: ILanguageRuntimeSession,
@@ -62,6 +64,8 @@ export class NotebookCellExecution extends Disposable {
 		}));
 
 		// Clear existing outputs and start execution
+		this._accumulatedText = ''; // Reset for new execution
+		this._textOutputId = undefined;
 		this._cellExecution.update([
 			{
 				editType: CellExecutionUpdateType.ExecutionState,
@@ -108,15 +112,51 @@ export class NotebookCellExecution extends Disposable {
 		// Handle display_data (plots, tables, etc.)
 		const outputItems = this._convertDataToOutputItems(msg.data);
 		if (outputItems.length > 0) {
-			this._cellExecution.update([{
-				editType: CellExecutionUpdateType.Output,
-				cellHandle: this._cellExecution.cellHandle,
-				append: true,
-				outputs: [{
-					outputId: generateUuid(),
-					outputs: outputItems,
-				}]
-			}]);
+			// Check if this is text output
+			const isTextOutput = outputItems.length === 1 && outputItems[0].mime === 'text/plain';
+			
+			if (isTextOutput) {
+				// Accumulate text output
+				const textData = outputItems[0].data;
+				const newText = textData.toString();
+				this._accumulatedText += newText;
+				
+				const isFirstTextOutput = !this._textOutputId;
+				
+				// Create or update the text output
+				if (!this._textOutputId) {
+					this._textOutputId = generateUuid();
+				}
+				
+				// Replace the entire text output with accumulated text
+				this._cellExecution.update([{
+					editType: CellExecutionUpdateType.Output,
+					cellHandle: this._cellExecution.cellHandle,
+					append: isFirstTextOutput, // Only append if first time, otherwise replace
+					outputs: [{
+						outputId: this._textOutputId,
+						outputs: [{
+							mime: 'text/plain',
+							data: VSBuffer.fromString(this._accumulatedText)
+						}],
+					}]
+				}]);
+			} else {
+				// Non-text output (images, plots, etc.) - create separate output
+				// Reset text accumulation since we're breaking the text stream
+				this._accumulatedText = '';
+				this._textOutputId = undefined;
+				
+				this._cellExecution.update([{
+					editType: CellExecutionUpdateType.Output,
+					cellHandle: this._cellExecution.cellHandle,
+					append: true,
+					outputs: [{
+						outputId: generateUuid(),
+						outputs: outputItems,
+					}]
+				}]);
+			}
 		}
 	}
 

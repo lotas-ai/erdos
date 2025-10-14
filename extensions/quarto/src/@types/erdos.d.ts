@@ -19,24 +19,29 @@ declare module 'erdos' {
 		provideHelpTopic(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken): vscode.ProviderResult<string>;
 	}
 
-	export interface PreviewOptions extends vscode.WebviewPanelOptions, vscode.WebviewOptions {
+	export interface ViewerOptions extends vscode.WebviewPanelOptions, vscode.WebviewOptions {
 	}
 
-	export interface PreviewPanelOnDidChangeViewStateEvent {
-		readonly previewPanel: PreviewPanel;
+	export interface ViewerPanelOnDidChangeViewStateEvent {
+		readonly viewerPanel: ViewerPanel;
 	}
 
-	export interface PreviewPanel {
+	export interface ViewerPanel {
 		readonly viewType: string;
 		title: string;
 		readonly webview: vscode.Webview;
 		readonly active: boolean;
 		readonly visible: boolean;
-		readonly onDidChangeViewState: vscode.Event<PreviewPanelOnDidChangeViewStateEvent>;
+		readonly onDidChangeViewState: vscode.Event<ViewerPanelOnDidChangeViewStateEvent>;
 		readonly onDidDispose: vscode.Event<void>;
 		reveal(preserveFocus?: boolean): void;
 		dispose(): any;
 	}
+	
+	// Backward compatibility aliases for Quarto extension
+	export type PreviewOptions = ViewerOptions;
+	export type PreviewPanelOnDidChangeViewStateEvent = ViewerPanelOnDidChangeViewStateEvent;
+	export type PreviewPanel = ViewerPanel;
 
 	export enum RuntimeCodeExecutionMode {
 		Interactive = 'interactive',
@@ -56,6 +61,11 @@ declare module 'erdos' {
 	}
 
 	namespace window {
+		export function createViewerPanel(viewType: string, title: string, preserveFocus?: boolean, options?: ViewerOptions): ViewerPanel;
+		export function viewUrl(url: vscode.Uri): ViewerPanel;
+		export function viewHtml(path: string): void;
+		
+		// Backward compatibility aliases for Quarto extension
 		export function createPreviewPanel(viewType: string, title: string, preserveFocus?: boolean, options?: PreviewOptions): PreviewPanel;
 		export function previewUrl(url: vscode.Uri): PreviewPanel;
 		export function previewHtml(path: string): void;

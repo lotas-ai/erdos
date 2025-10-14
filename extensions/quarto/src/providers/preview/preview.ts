@@ -307,6 +307,7 @@ class PreviewManager {
     this.previewOutput_ = "";
     this.previewDoc_ = doc;
     const previewEnv = await this.previewEnvManager_.previewEnv(uri);
+    
     if (doc && (await this.canReuseRunningPreview(doc, previewEnv))) {
       try {
         const response = await this.previewRenderRequest(doc, format);

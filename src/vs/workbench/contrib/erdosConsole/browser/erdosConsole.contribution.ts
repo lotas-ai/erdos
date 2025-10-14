@@ -28,7 +28,7 @@ const VIEW_CONTAINER = Registry.as<IViewContainersRegistry>(ViewContainerExtensi
 	icon: consoleIcon,
 	order: 3,
 	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, ['workbench.panel.erdosConsole', { mergeViewWithContainerWhenSingleView: true }])
-}, ViewContainerLocation.Panel);
+}, ViewContainerLocation.Panel, { isDefault: true });
 
 Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([{
 	id: 'workbench.panel.erdosConsole',

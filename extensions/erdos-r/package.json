@@ -253,12 +253,6 @@
         "icon": "$(play)"
       },
       {
-        "command": "r.execInTerminal-icon",
-        "category": "R",
-        "title": "%r.command.execInTerminalIcon.title%",
-        "icon": "$(play)"
-      },
-      {
         "command": "r.execSelectionInConsole",
         "category": "R",
         "title": "%r.command.execSelectionInConsole.title%",
@@ -280,13 +274,6 @@
           "when": "!virtualWorkspace && shellExecutionSupported && editorLangId == r"
         },
         {
-          "command": "r.execInTerminal-icon",
-          "title": "%r.command.execInTerminalIcon.title%",
-          "category": "R",
-          "icon": "$(play)",
-          "when": "false"
-        },
-        {
           "command": "r.execSelectionInConsole",
           "title": "%r.command.execSelectionInConsole.title%",
           "category": "R",
@@ -295,26 +282,20 @@
       ],
       "editor/title/run": [
         {
-          "command": "r.execInTerminal-icon",
-          "group": "navigation@0",
-          "title": "%r.command.execInTerminalIcon.title%",
-          "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"
-        },
-        {
           "command": "r.execInConsole",
-          "group": "navigation@1",
+          "group": "navigation@0",
           "title": "%r.command.execInConsole.title%",
           "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"
         },
         {
           "command": "r.execSelectionInConsole",
-          "group": "navigation@2",
+          "group": "navigation@1",
           "title": "%r.command.execSelectionInConsole.title%",
           "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"
         },
         {
           "command": "r.execInTerminal",
-          "group": "navigation@3",
+          "group": "navigation@2",
           "title": "%r.command.execInTerminal.title%",
           "icon": "$(play)",
           "when": "resourceLangId == r && !isInDiffEditor && !virtualWorkspace && shellExecutionSupported"

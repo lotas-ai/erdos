@@ -190,6 +190,7 @@ class VSCodeNodeModuleFactory implements INodeModuleFactory {
 import { IExtHostRuntime } from './extHostRuntime.js';
 import { ExtHostContext } from './extHost.protocol.js';
 import type { ExtHostLanguageFeatures } from './extHostLanguageFeatures.js';
+import type { ExtHostWebviewPanels } from './extHostWebviewPanels.js';
 
 class ErdosNodeModuleFactory implements INodeModuleFactory {
 	public readonly nodeModuleName = 'erdos';
@@ -205,6 +206,7 @@ class ErdosNodeModuleFactory implements INodeModuleFactory {
 		if (!this._api) {
 			const extHostRuntime = this._instaService.invokeFunction(accessor => accessor.get(IExtHostRuntime));
 			const rpcService = this._instaService.invokeFunction(accessor => accessor.get(IExtHostRpcService));
+			const extHostWebviewPanels = rpcService.getRaw(ExtHostContext.ExtHostWebviewPanels) as ExtHostWebviewPanels;
 
 			this._api = {
 				// Enums
@@ -304,8 +306,11 @@ class ErdosNodeModuleFactory implements INodeModuleFactory {
 					async getActiveSessions() {
 						return await extHostRuntime.getActiveSessions();
 					},
-					async selectLanguageRuntime(runtimeId: string) {
-						await extHostRuntime.selectLanguageRuntime(runtimeId);
+					async getPreferredRuntime(languageId: string) {
+						return await extHostRuntime.getPreferredRuntime(languageId);
+					},
+					async selectLanguageRuntime(languageId: string) {
+						return await extHostRuntime.selectLanguageRuntime(languageId);
 					},
 					async executeCode(languageId: string, code: string, focus: boolean, allowIncomplete?: boolean, mode?: any, errorBehavior?: any, observer?: any, executionId?: string, batchId?: string) {
 						return await extHostRuntime.executeCode(languageId, code, focus, allowIncomplete, mode, errorBehavior, observer, executionId, batchId);
@@ -329,8 +334,17 @@ class ErdosNodeModuleFactory implements INodeModuleFactory {
 					};
 				},
 				window: {
-					createPreviewPanel(_viewType: string, _title: string, _preserveFocus?: boolean, _options?: any) {
-						return undefined;
+					createPreviewPanel(viewType: string, title: string, preserveFocus?: boolean, options?: any) {
+						// Create webview panel using ExtHostWebviewPanels service
+						// This maps to vscode.window.createWebviewPanel with ViewColumn.Beside
+						const showOptions = { viewColumn: 2 /* ViewColumn.Beside */, preserveFocus: preserveFocus };
+						return extHostWebviewPanels.createWebviewPanel(
+							nullExtensionDescription,
+							viewType,
+							title,
+							showOptions,
+							options
+						);
 					},
 					previewUrl(_url: any) {
 						return undefined;

@@ -48,16 +48,6 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	const runFileViaIcon = vscode.commands.registerCommand('r.execInTerminal-icon', async (resource?: vscode.Uri) => {
-		try {
-			await executeRFileInTerminal(resource);
-		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			LOGGER.appendLine(`[Run R File] ${message}`);
-			void vscode.window.showErrorMessage(message);
-		}
-	});
-
 	const runSelection = vscode.commands.registerCommand('r.execSelectionInConsole', async () => {
 		try {
 			await vscode.commands.executeCommand('workbench.action.erdosConsole.executeCode', { languageId: 'r' });
@@ -68,7 +58,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	context.subscriptions.push(runFileInConsole, runFileInTerminal, runFileViaIcon, runSelection);
+	context.subscriptions.push(runFileInConsole, runFileInTerminal, runSelection);
 }
 
 async function executeRFileInConsole(resource?: vscode.Uri): Promise<void> {
@@ -97,28 +87,25 @@ async function executeRFileInTerminal(resource?: vscode.Uri): Promise<void> {
 	const fileUri = await resolveTargetFile(resource);
 	await ensureDocumentSaved(fileUri);
 
-	const runtimeMetadata = await getOrSelectRuntime();
+	const runtimeMetadata = await erdos.runtime.getPreferredRuntime('r');
 	if (!runtimeMetadata) {
-		throw new Error('Unable to locate an R runtime. Select an R interpreter and try again.');
+		throw new Error('No R interpreter found. Please start an R console to select an interpreter first.');
 	}
 
 	const runtimeExtra = runtimeMetadata.extraRuntimeData as RMetadataExtra | undefined;
-	const shellPath = resolveRShellPath(runtimeExtra);
-	if (!shellPath) {
-		throw new Error('Unable to determine the R executable path.');
+	const rscriptPath = resolveRscriptPath(runtimeExtra);
+	if (!rscriptPath) {
+		throw new Error('Unable to determine R executable path from the selected runtime.');
 	}
 
-	const shellArgs = buildRShellArguments(shellPath, fileUri.fsPath);
 	const workingDirectory = getWorkingDirectory(fileUri);
 
-	const terminalOptions: vscode.TerminalOptions = {
+	const terminal = vscode.window.createTerminal({
 		name: 'R: Run File',
-		shellPath,
-		shellArgs,
 		cwd: workingDirectory
-	};
-
-	const terminal = vscode.window.createTerminal(terminalOptions);
+	});
+	
+	terminal.sendText(`${JSON.stringify(rscriptPath)} --vanilla ${JSON.stringify(fileUri.fsPath)}`);
 	terminal.show();
 }
 
@@ -156,47 +143,26 @@ async function ensureDocumentSaved(uri: vscode.Uri): Promise<vscode.TextDocument
 	return document;
 }
 
-async function getOrSelectRuntime(): Promise<erdos.LanguageRuntimeMetadata | undefined> {
-	try {
-		const preferred = await erdos.runtime.getPreferredRuntime('r');
-		if (preferred) {
-			return preferred;
-		}
-
-		return await erdos.runtime.selectLanguageRuntime('r');
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		LOGGER.appendLine(`[R Runtime] ${message}`);
-		return undefined;
-	}
-}
-
-function resolveRShellPath(extra?: RMetadataExtra): string | undefined {
+function resolveRscriptPath(extra?: RMetadataExtra): string | undefined {
 	if (!extra) {
 		return undefined;
 	}
 
-	const scriptCandidates: string[] = [];
-
+	// Try to find Rscript in the runtime's bin directory
 	if (extra.binpath) {
 		const rscriptName = process.platform === 'win32' ? 'Rscript.exe' : 'Rscript';
-		scriptCandidates.push(path.join(extra.binpath, rscriptName));
+		const candidate = path.join(extra.binpath, rscriptName);
+		if (fs.existsSync(candidate)) {
+			return candidate;
+		}
 	}
 
-	if (extra.scriptpath) {
-		scriptCandidates.push(extra.scriptpath);
+	// Try scriptpath if available
+	if (extra.scriptpath && fs.existsSync(extra.scriptpath)) {
+		return extra.scriptpath;
 	}
 
-	return scriptCandidates.find(candidate => typeof candidate === 'string' && fs.existsSync(candidate));
-}
-
-function buildRShellArguments(shellPath: string, filePath: string): string[] {
-	const executableName = path.basename(shellPath).toLowerCase();
-	if (executableName.startsWith('rscript')) {
-		return ['--vanilla', filePath];
-	}
-
-	return ['--vanilla', '--quiet', '-f', filePath];
+	return undefined;
 }
 
 function getWorkingDirectory(fileUri: vscode.Uri): string | undefined {
