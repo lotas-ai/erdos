@@ -29,8 +29,14 @@ infrastructure-dev-guide-updated.md
 # Compiled JavaScript files
 src/**/*.js
 src/**/*.js.map
-# Exception for vendored third-party libraries
+# Exceptions for vendored third-party libraries and test fixtures
+!src/esm-package-dependencies/**/*.js
+!src/vs/loader.js
+!src/**/test/**/*.js
 !src/**/semver/semver.js
+!src/vs/base/common/marked/marked.js
+!src/vs/base/browser/dompurify/dompurify.js
+!src/vs/workbench/contrib/webview/browser/pre/service-worker.js
 
 # Temporary kernel files
 temp/kernels/
