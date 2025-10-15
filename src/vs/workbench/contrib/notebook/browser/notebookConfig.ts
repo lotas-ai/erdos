@@ -13,6 +13,8 @@ import { Registry } from '../../../../platform/registry/common/platform.js';
 
 export const NOTEBOOK_CONSOLE_MIRRORING_KEY = 'notebook.consoleMirroring.enabled';
 export const NOTEBOOK_PLOT_MIRRORING_KEY = 'notebook.plotMirroring.enabled';
+export const QUARTO_CONSOLE_MIRRORING_KEY = 'quarto.consoleMirroring.enabled';
+export const QUARTO_PLOT_MIRRORING_KEY = 'quarto.plotMirroring.enabled';
 
 const configurationRegistry = Registry.as<IConfigurationRegistry>(
 	Extensions.Configuration
@@ -38,6 +40,32 @@ configurationRegistry.registerConfiguration({
 			markdownDescription: localize(
 				'notebook.plotMirroring.enabled',
 				'Controls whether plots generated in notebook cells are displayed in the Plots pane. When enabled, plots from notebooks appear in both the notebook cell output and the Plots pane. When disabled, plots only appear in the notebook cell output.'
+			),
+		},
+	},
+});
+
+configurationRegistry.registerConfiguration({
+	id: 'quarto',
+	order: 8,
+	title: localize('quartoConfigurationTitle', "Quarto"),
+	type: 'object',
+	scope: ConfigurationScope.MACHINE_OVERRIDABLE,
+	properties: {
+		[QUARTO_CONSOLE_MIRRORING_KEY]: {
+			type: 'boolean',
+			default: true,
+			markdownDescription: localize(
+				'quarto.consoleMirroring.enabled',
+				'Controls whether Quarto/RMarkdown cell execution and text outputs are displayed in the console. Quarto documents always share the same kernel session as the console, allowing variables and state to be shared. When enabled, cell activity is shown in both the console and inline. When disabled, cell activity is only shown inline.'
+			),
+		},
+		[QUARTO_PLOT_MIRRORING_KEY]: {
+			type: 'boolean',
+			default: true,
+			markdownDescription: localize(
+				'quarto.plotMirroring.enabled',
+				'Controls whether plots generated in Quarto/RMarkdown cells are displayed in the Plots pane. When enabled, plots appear in both the inline cell output and the Plots pane. When disabled, plots only appear in the inline cell output.'
 			),
 		},
 	},

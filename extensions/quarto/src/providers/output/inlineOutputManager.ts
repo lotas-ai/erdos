@@ -38,17 +38,13 @@ export class QuartoInlineOutputManager extends Disposable {
 	private chunkStates_ = new Map<string, ChunkState>();   // chunkId -> runtime state
 	private executionToChunkId_ = new Map<string, string>(); // executionId -> chunkId
 	private cellOutputs_ = new Map<string, string[]>();      // executionId -> output lines
-	private disposingChunks_ = new Set<string>();            // Track chunks being intentionally disposed
 	private decorationToChunkId_ = new Map<vscode.TextEditorDecorationType, string>(); // decorationType -> chunkId
     private activeEditor_?: vscode.TextEditor;
-	private isSwitchingEditors_ = false;                     // Flag to prevent cleanup during editor switches
 
     constructor() {
         super();
 
         this._register(vscode.window.onDidChangeActiveTextEditor(async (editor) => {
-            this.isSwitchingEditors_ = true;
-            
             if (this.currentDocumentUri_) {
                 await this.saveCurrentDocumentState();
             }
@@ -63,8 +59,6 @@ export class QuartoInlineOutputManager extends Disposable {
                 this.currentDocumentUri_ = newUri;
                 await this.restoreDocumentState(newUri, editor);
             }
-            
-            this.isSwitchingEditors_ = false;
         }));
 
         this._register(vscode.workspace.onDidChangeTextDocument(async (event) => {
@@ -120,22 +114,12 @@ export class QuartoInlineOutputManager extends Disposable {
             return;
         }
 
-        for (const [chunkId, state] of this.chunkStates_) {
-            if (state.viewZone) {
-                this.disposingChunks_.add(chunkId);
-                state.viewZone.dispose();
-                state.viewZone = null;
-            }
-        }
-
         this.documentStates_.set(this.currentDocumentUri_, {
             chunkStates: new Map(this.chunkStates_),
             executionToChunkId: new Map(this.executionToChunkId_),
             cellOutputs: new Map(this.cellOutputs_),
             decorationToChunkId: new Map(this.decorationToChunkId_)
         });
-
-        this.disposingChunks_.clear();
     }
 
     // Clear current state without saving
@@ -202,7 +186,6 @@ export class QuartoInlineOutputManager extends Disposable {
             let state = this.chunkStates_.get(chunkId);
             if (state) {
                 if (state.viewZone) {
-                    this.disposingChunks_.add(chunkId);
                     state.viewZone.dispose();
                 }
                 state.viewZone = null;
@@ -235,7 +218,6 @@ export class QuartoInlineOutputManager extends Disposable {
 
         this.executionToChunkId_.set(executionId, chunkId);
         this.cellOutputs_.set(executionId, []);
-        this.disposingChunks_.delete(chunkId);
     }
 
     public isQuartoExecution(executionId: string): boolean {
@@ -292,8 +274,10 @@ export class QuartoInlineOutputManager extends Disposable {
             // Append only new output (streaming)
             const newOutputLines = outputLines.slice(state.lastOutputLength);
             if (newOutputLines.length > 0) {
-                const newText = newOutputLines.join('');
-                state.viewZone.appendText(newText);
+                // Append each line separately so IMAGE: detection works
+                for (const line of newOutputLines) {
+                    state.viewZone.appendText(line);
+                }
                 state.lastOutputLength = outputLines.length;
             }
 
@@ -323,8 +307,10 @@ export class QuartoInlineOutputManager extends Disposable {
                 heightInPx: height
             });
 
-            const allText = outputLines.join('');
-            controller.appendText(allText);
+            // Append each output line separately so IMAGE: detection works
+            for (const line of outputLines) {
+                controller.appendText(line);
+            }
 
             const state = this.chunkStates_.get(chunkId);
             if (state) {
@@ -332,15 +318,16 @@ export class QuartoInlineOutputManager extends Disposable {
                 state.lastOutputLength = outputLines.length;
                 
                 controller.onDidDispose(() => {
-                    if (this.isSwitchingEditors_) {
-                        return;
+                    const state = this.chunkStates_.get(chunkId);
+                    if (state) {
+                        state.viewZone = null;
                     }
                     
-                    if (this.disposingChunks_.has(chunkId)) {
-                        return;
-                    }
-                    
-                    this.cleanupChunk(chunkId);
+                    // Schedule deletion on next tick
+                    // If file switch happens, saveCurrentDocumentState will save before deletion runs
+                    setTimeout(() => {
+                        this.deleteChunk(chunkId);
+                    }, 0);
                 });
             } else {
                 controller.dispose();
@@ -426,14 +413,14 @@ export class QuartoInlineOutputManager extends Disposable {
         return lines;
     }
 
-    private async cleanupChunk(chunkId: string): Promise<void> {
+    private deleteChunk(chunkId: string): void {
         const state = this.chunkStates_.get(chunkId);
         if (!state) {
             return;
         }
 
         this.chunkStates_.delete(chunkId);
-
+        
         for (const [executionId, mappedChunkId] of this.executionToChunkId_.entries()) {
             if (mappedChunkId === chunkId) {
                 this.executionToChunkId_.delete(executionId);
@@ -475,6 +462,10 @@ export class QuartoInlineOutputManager extends Disposable {
             this.cellOutputs_.delete(executionId);
             this.executionToChunkId_.delete(executionId);
         }
+    }
+
+    public clearAllOutputs(): void {
+        this.disposeAllChunks();
     }
 }
 

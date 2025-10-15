@@ -25,7 +25,7 @@ import { workspace } from "vscode";
 import { JupyterKernelspec } from "core";
 
 export interface CellExecutor {
-	execute: (blocks: string[], editorUri?: Uri, cellRange?: vscode.Range) => Promise<void>;
+	execute: (blocks: string[], editorUri?: Uri, cellRange?: vscode.Range, batchId?: string) => Promise<void>;
 	executeSelection?: () => Promise<void>;
 }
 

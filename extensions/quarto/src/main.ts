@@ -32,6 +32,7 @@ import { activateCopyFiles } from "./providers/copyfiles";
 import { quartoInlineOutputManager } from "./providers/output/inlineOutputManager";
 import { activateZotero } from "./providers/zotero/zotero";;
 import { extensionHost } from "./host";
+import { clearOutputsCommands } from "./providers/clearOutputs";
 import { initQuartoContext } from "quarto-core";
 import { configuredQuartoPath } from "./core/quarto";
 import { activateDenoConfig } from "./providers/deno-config";
@@ -52,6 +53,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // commands
   const commands = cellCommands(host, engine);
+  commands.push(...clearOutputsCommands());
 
   // get quarto context (some features conditional on it)
   const quartoPath = await configuredQuartoPath();

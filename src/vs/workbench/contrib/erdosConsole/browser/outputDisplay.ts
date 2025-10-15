@@ -133,12 +133,20 @@ export class OutputDisplay extends Disposable {
 	}
 
 	private _shouldDisplayMessage(msg: any): boolean {
-		const consoleMirroringEnabled = this._configurationService.getValue<boolean>('notebook.consoleMirroring.enabled') ?? false;
+		const notebookConsoleMirroringEnabled = this._configurationService.getValue<boolean>('notebook.consoleMirroring.enabled') ?? false;
 		const isNotebook = msg.parent_id && this._consoleService.isNotebookExecution(msg.parent_id);
 		
-		if (!consoleMirroringEnabled && isNotebook) {
+		if (!notebookConsoleMirroringEnabled && isNotebook) {
 			return false;
 		}
+
+		const quartoConsoleMirroringEnabled = this._configurationService.getValue<boolean>('quarto.consoleMirroring.enabled') ?? true;
+		const isQuarto = msg.parent_id && this._consoleService.isQuartoExecution(msg.parent_id);
+		
+		if (!quartoConsoleMirroringEnabled && isQuarto) {
+			return false;
+		}
+
 		return true;
 	}
 

@@ -53,7 +53,7 @@ export function hooksExtensionHost(): ExtensionHost {
         case "csharp":
         case "r":
           return {
-            execute: async (blocks: string[], _editorUri?: vscode.Uri, cellRange?: vscode.Range): Promise<void> => {
+            execute: async (blocks: string[], _editorUri?: vscode.Uri, cellRange?: vscode.Range, providedBatchId?: string): Promise<void> => {
               const runtime = hooksApi()?.runtime;
 
               if (runtime === undefined) {
@@ -68,6 +68,10 @@ export function hooksExtensionHost(): ExtensionHost {
 
               // Our callback executes each block sequentially
               const callback = async () => {
+                // Use provided batch ID or generate a new one for all blocks in this execution
+                const batchId = providedBatchId || generateUuid();
+                const filePath = document.uri.fsPath;
+
                 for (const block of blocks) {
                   // Generate unique execution ID for tracking
                   const executionId = generateUuid();
@@ -80,8 +84,8 @@ export function hooksExtensionHost(): ExtensionHost {
                     quartoInlineOutputManager.trackCellExecution(executionId, cellRange);
                   }
 
-                  // Execute code block with our execution ID
-                  await runtime.executeCode(language, block, false, true, undefined, undefined, undefined, executionId);
+                  // Execute code block with execution ID, batch ID, and file path for attribution
+                  await runtime.executeCode(language, block, false, true, undefined, undefined, undefined, executionId, batchId, filePath);
                 }
               }
 

@@ -18,7 +18,7 @@ import {
 import { IStorageService } from '../../../../../platform/storage/common/storage.js';
 import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
 import { IErdosNotebookOutputWebviewService } from '../../../erdosOutputWebview/browser/notebookOutputWebviewService.js';
-import { NOTEBOOK_PLOT_MIRRORING_KEY } from '../../../notebook/browser/notebookConfig.js';
+import { NOTEBOOK_PLOT_MIRRORING_KEY, QUARTO_PLOT_MIRRORING_KEY } from '../../../notebook/browser/notebookConfig.js';
 import { IConsoleCodeAttribution, ILanguageRuntimeCodeExecutedEvent } from '../../../../services/languageRuntime/common/codeExecution.js';
 import { IConsoleService } from '../../../../services/erdosConsole/common/consoleService.js';
 import { PlotInstanceRegistry } from './plotInstanceRegistry.js';
@@ -258,6 +258,13 @@ export class PlotsOrchestrator extends Disposable implements IErdosPlotsService 
 
 		if (message.parent_id && this._consoleService.isNotebookExecution(message.parent_id)) {
 			const mirroringEnabled = this._configurationService.getValue<boolean>(NOTEBOOK_PLOT_MIRRORING_KEY) ?? true;
+			if (!mirroringEnabled) {
+				return;
+			}
+		}
+
+		if (message.parent_id && this._consoleService.isQuartoExecution(message.parent_id)) {
+			const mirroringEnabled = this._configurationService.getValue<boolean>(QUARTO_PLOT_MIRRORING_KEY) ?? true;
 			if (!mirroringEnabled) {
 				return;
 			}

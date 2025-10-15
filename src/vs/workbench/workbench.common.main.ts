@@ -218,7 +218,7 @@ import './contrib/erdosEnvironment/browser/erdosEnvironment.contribution.js';
 import './contrib/notebook/browser/notebook.contribution.js';
 import './contrib/notebook/browser/notebookConfig.js';
 import './contrib/notebook/browser/notebookActions.contribution.js';
-import './contrib/quartoActions/browser/quartoActions.contribution.js';
+import './contrib/notebook/browser/quartoActions.contribution.js';
 
 // Speech
 import './contrib/speech/browser/speech.contribution.js';

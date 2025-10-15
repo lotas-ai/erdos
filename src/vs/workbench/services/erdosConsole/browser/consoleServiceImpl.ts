@@ -29,6 +29,7 @@ export class ConsoleServiceImpl extends Disposable implements IConsoleService {
 	readonly onDidExecuteCode = this._onDidExecuteCode.event;
 
 	private readonly _notebookExecutionIds = new Set<string>();
+	private readonly _quartoExecutionIds = new Set<string>();
 
 	constructor(
 		@ISessionManager private readonly _sessionManager: ISessionManager,
@@ -128,6 +129,14 @@ export class ConsoleServiceImpl extends Disposable implements IConsoleService {
 
 	isNotebookExecution(executionId: string): boolean {
 		return this._notebookExecutionIds.has(executionId);
+	}
+
+	markExecutionAsQuartoOriginated(executionId: string): void {
+		this._quartoExecutionIds.add(executionId);
+	}
+
+	isQuartoExecution(executionId: string): boolean {
+		return this._quartoExecutionIds.has(executionId);
 	}
 
 	recordCodeExecution(event: ILanguageRuntimeCodeExecutedEvent): void {

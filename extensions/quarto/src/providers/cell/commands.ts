@@ -47,6 +47,7 @@ import { ExtensionHost } from "../../host";
 import { hasHooks } from "../../host/hooks";
 import { isKnitrDocument } from "../../host/executors";
 import { commands } from "vscode";
+import { v4 as generateUuid } from 'uuid';
 
 export function cellCommands(host: ExtensionHost, engine: MarkdownEngine): Command[] {
   return [
@@ -359,6 +360,9 @@ class RunCellsAboveCommand extends RunCommand implements Command {
 
       const executor = await this.cellExecutorForLanguage(language, editor.document, this.engine_);
       if (executor) {
+        // Generate a shared batch ID for all blocks in this run all above operation
+        const sharedBatchId = generateUuid();
+        
         // Execute each block individually with its own chunk ID and range (matches Rao)
         for (const blk of blocks.filter(isExecutableLanguageBlockOf(language))) {
           const cellRange = new vscode.Range(
@@ -368,7 +372,7 @@ class RunCellsAboveCommand extends RunCommand implements Command {
           
           const code = codeWithoutOptionsFromBlock(blk);
           
-          await executeInteractive(executor, [code], editor.document, cellRange);
+          await executeInteractive(executor, [code], editor.document, cellRange, sharedBatchId);
         }
       }
     }
@@ -417,6 +421,9 @@ class RunCellsBelowCommand extends RunCommand implements Command {
     if (language && blocks.length > 0) {
       const executor = await this.cellExecutorForLanguage(language, editor.document, this.engine_);
       if (executor) {
+        // Generate a shared batch ID for all blocks in this run all below operation
+        const sharedBatchId = generateUuid();
+        
         for (const blk of blocks) {
           const cellRange = new vscode.Range(
             new vscode.Position(blk.range.start.line, 0),
@@ -425,7 +432,7 @@ class RunCellsBelowCommand extends RunCommand implements Command {
           
           const code = codeWithoutOptionsFromBlock(blk);
           
-          await executeInteractive(executor, [code], editor.document, cellRange);
+          await executeInteractive(executor, [code], editor.document, cellRange, sharedBatchId);
         }
       }
     }
@@ -467,6 +474,9 @@ class RunAllCellsCommand extends RunCommand implements Command {
     for (const [language, blocks] of blocksByLanguage) {
       const executor = await this.cellExecutorForLanguage(language, editor.document, this.engine_);
       if (executor) {
+        // Generate a shared batch ID for all blocks in this run all cells operation
+        const sharedBatchId = generateUuid();
+        
         // Execute each block individually with its own chunk ID and range (matches Rao)
         for (const block of blocks) {
           const cellRange = new vscode.Range(
@@ -476,7 +486,7 @@ class RunAllCellsCommand extends RunCommand implements Command {
           
           const code = codeWithoutOptionsFromBlock(block);
           
-          await executeInteractive(executor, [code], editor.document, cellRange);
+          await executeInteractive(executor, [code], editor.document, cellRange, sharedBatchId);
         }
       }
     }

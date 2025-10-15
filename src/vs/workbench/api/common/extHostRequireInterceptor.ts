@@ -312,8 +312,8 @@ class ErdosNodeModuleFactory implements INodeModuleFactory {
 					async selectLanguageRuntime(languageId: string) {
 						return await extHostRuntime.selectLanguageRuntime(languageId);
 					},
-					async executeCode(languageId: string, code: string, focus: boolean, allowIncomplete?: boolean, mode?: any, errorBehavior?: any, observer?: any, executionId?: string, batchId?: string) {
-						return await extHostRuntime.executeCode(languageId, code, focus, allowIncomplete, mode, errorBehavior, observer, executionId, batchId);
+					async executeCode(languageId: string, code: string, focus: boolean, allowIncomplete?: boolean, mode?: any, errorBehavior?: any, observer?: any, executionId?: string, batchId?: string, filePath?: string) {
+						return await extHostRuntime.executeCode(languageId, code, focus, allowIncomplete, mode, errorBehavior, observer, executionId, batchId, filePath);
 					},
 					onDidChangeForegroundSession(listener: (sessionId: string) => void) {
 						return extHostRuntime.onDidChangeForegroundSession(listener);

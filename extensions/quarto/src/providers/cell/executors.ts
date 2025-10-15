@@ -87,9 +87,10 @@ export async function executeInteractive(
   executor: CellExecutor,
   blocks: string[],
   document: TextDocument,
-  cellRange?: vscode.Range
+  cellRange?: vscode.Range,
+  batchId?: string
 ): Promise<void> {
-  return await executor.execute(blocks, !document.isUntitled ? document.uri : undefined, cellRange);
+  return await executor.execute(blocks, !document.isUntitled ? document.uri : undefined, cellRange, batchId);
 }
 
 // attempt language aware execution of current selection (returns false

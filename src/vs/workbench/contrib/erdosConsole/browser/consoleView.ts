@@ -23,7 +23,7 @@ import { ILanguageFeaturesService } from '../../../../editor/common/services/lan
 import { ILanguageRuntimeService } from '../../../services/languageRuntime/common/languageRuntimeService.js';
 import { ConsoleStartupScreen } from './consoleStartupScreen.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
-import { NOTEBOOK_CONSOLE_MIRRORING_KEY } from '../../notebook/browser/notebookConfig.js';
+import { NOTEBOOK_CONSOLE_MIRRORING_KEY, QUARTO_CONSOLE_MIRRORING_KEY } from '../../notebook/browser/notebookConfig.js';
 import { CodeAttributionSource } from '../../../services/languageRuntime/common/codeExecution.js';
 import { ICommandHistoryService } from '../../../services/erdosHistory/common/historyService.js';
 
@@ -177,8 +177,14 @@ export class ConsoleView extends Disposable {
 		this._lastExecutionSource = event.attribution.source;
 		
 		// Check if this is a notebook execution and console mirroring is disabled
-		const consoleMirroringEnabled = props.configurationService.getValue<boolean>(NOTEBOOK_CONSOLE_MIRRORING_KEY) ?? true;
-		if (!consoleMirroringEnabled && props.consoleService.isNotebookExecution(event.executionId)) {
+		const notebookConsoleMirroringEnabled = props.configurationService.getValue<boolean>(NOTEBOOK_CONSOLE_MIRRORING_KEY) ?? true;
+		if (!notebookConsoleMirroringEnabled && props.consoleService.isNotebookExecution(event.executionId)) {
+			return;
+		}
+
+		// Check if this is a Quarto execution and console mirroring is disabled
+		const quartoConsoleMirroringEnabled = props.configurationService.getValue<boolean>(QUARTO_CONSOLE_MIRRORING_KEY) ?? true;
+		if (!quartoConsoleMirroringEnabled && props.consoleService.isQuartoExecution(event.executionId)) {
 			return;
 		}
 

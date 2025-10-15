@@ -389,6 +389,7 @@ export class MainThreadRuntime implements MainThreadRuntimeShape, ILanguageRunti
 
 	$registerQuartoExecution(executionId: string): void {
 		this._quartoExecutionIds.add(executionId);
+		this._consoleService.markExecutionAsQuartoOriginated(executionId);
 	}
 
 	// ===== Helper Methods =====
@@ -403,5 +404,6 @@ export class MainThreadRuntime implements MainThreadRuntimeShape, ILanguageRunti
 
 	private registerQuartoExecution(executionId: string): void {
 		this._quartoExecutionIds.add(executionId);
+		this._consoleService.markExecutionAsQuartoOriginated(executionId);
 	}
 }

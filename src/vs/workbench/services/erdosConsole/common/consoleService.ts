@@ -27,6 +27,8 @@ export interface IConsoleService {
 	
 	markExecutionAsNotebookOriginated(executionId: string): void;
 	isNotebookExecution(executionId: string): boolean;
+	markExecutionAsQuartoOriginated(executionId: string): void;
+	isQuartoExecution(executionId: string): boolean;
 	
 	recordCodeExecution(event: ILanguageRuntimeCodeExecutedEvent): void;
 }

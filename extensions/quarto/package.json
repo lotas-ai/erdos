@@ -295,6 +295,12 @@
         }
       },
       {
+        "command": "quarto.clearAllOutputs",
+        "icon": "$(clear-all)",
+        "title": "Clear All Outputs",
+        "category": "Quarto"
+      },
+      {
         "command": "quarto.runSelection",
         "title": "Run Selected Line(s)",
         "category": "Quarto"
@@ -593,6 +599,11 @@
       ],
       "editor/title": [
         {
+          "command": "quarto.clearAllOutputs",
+          "when": "editorLangId == quarto || editorLangId == markdown",
+          "group": "navigation@5"
+        },
+        {
           "command": "quarto.insertCodeCell",
           "when": "editorLangId == quarto || editorLangId == markdown",
           "group": "navigation@10"
@@ -605,11 +616,6 @@
         {
           "command": "quarto.clearCache",
           "when": "editorLangId == quarto",
-          "group": "1_quarto"
-        },
-        {
-          "command": "quarto.editInVisualMode",
-          "when": "resourceScheme != untitled && editorLangId == quarto || resourceScheme != untitled && editorLangId == markdown",
           "group": "1_quarto"
         },
         {
