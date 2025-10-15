@@ -8,6 +8,7 @@ import { traceError, traceInfo, traceLog } from '../../../logging';
 import { CreateEnvironmentOptionsInternal, CreateEnvironmentProgress } from '../types';
 import { pickWorkspaceFolder } from '../common/workspaceSelection';
 import { execObservable } from '../../../common/process/rawProcessApis';
+import type { Output } from '../../../common/process/types';
 import { createDeferred } from '../../../common/utils/async';
 import { getOSType, OSType } from '../../../common/utils/platform';
 import { createCondaScript } from '../../../common/process/internal/scripts';
@@ -107,7 +108,7 @@ async function createCondaEnv(
     const progressAndTelemetry = new CondaProgressAndTelemetry(progress);
     let condaEnvPath: string | undefined;
     out.subscribe(
-        (value) => {
+        (value: Output<string>) => {
             const output = splitLines(value.out).join('\r\n');
             traceLog(output.trimEnd());
             if (output.includes(CONDA_ENV_CREATED_MARKER) || output.includes(CONDA_ENV_EXISTING_MARKER)) {
@@ -115,7 +116,7 @@ async function createCondaEnv(
             }
             progressAndTelemetry.process(output);
         },
-        async (error) => {
+        async (error: unknown) => {
             traceError('Error while running conda env creation script: ', error);
             deferred.reject(error);
         },

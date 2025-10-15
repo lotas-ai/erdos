@@ -4,6 +4,7 @@
 import { exec, execSync, spawn } from 'child_process';
 import { Readable } from 'stream';
 import { Observable } from 'rxjs/Observable';
+import type { Subscriber } from 'rxjs';
 import { IDisposable } from '../types';
 import { createDeferred } from '../utils/async';
 import { EnvironmentVariables } from '../variables/types';
@@ -237,7 +238,7 @@ export function execObservable(
     };
     disposables?.add(disposable);
 
-    const output = new Observable<Output<string>>((subscriber) => {
+    const output = new Observable<Output<string>>((subscriber: Subscriber<Output<string>>) => {
         const internalDisposables: IDisposable[] = [];
 
         // eslint-disable-next-line @typescript-eslint/ban-types

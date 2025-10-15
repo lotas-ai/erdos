@@ -6,6 +6,7 @@ import { CancellationToken, CancellationTokenSource, ProgressLocation, Workspace
 import { Commands, PVSC_EXTENSION_ID } from '../../../common/constants';
 import { createVenvScript } from '../../../common/process/internal/scripts';
 import { execObservable } from '../../../common/process/rawProcessApis';
+import type { Output } from '../../../common/process/types';
 import { createDeferred } from '../../../common/utils/async';
 import { Common, CreateEnv } from '../../../common/utils/localize';
 import { traceError, traceInfo, traceLog, traceVerbose } from '../../../logging';
@@ -123,7 +124,7 @@ async function createVenv(
     const progressAndTelemetry = new VenvProgressAndTelemetry(progress);
     let venvPath: string | undefined;
     out.subscribe(
-        (value) => {
+        (value: Output<string>) => {
             const output = value.out.split(/\r?\n/g).join(os.EOL);
             traceLog(output.trimEnd());
             if (output.includes(VENV_CREATED_MARKER) || output.includes(VENV_EXISTING_MARKER)) {
@@ -131,7 +132,7 @@ async function createVenv(
             }
             progressAndTelemetry.process(output);
         },
-        (error) => {
+        (error: unknown) => {
             traceError('Error while running venv creation script: ', error);
             deferred.reject(error);
         },

@@ -13,7 +13,7 @@ import {
 } from '../../common/application/types';
 import { PYTHON_LANGUAGE } from '../../common/constants';
 import * as internalScripts from '../../common/process/internal/scripts';
-import { IProcessServiceFactory } from '../../common/process/types';
+import { IProcessServiceFactory, type Output } from '../../common/process/types';
 import { createDeferred } from '../../common/utils/async';
 import { IInterpreterService } from '../../interpreter/contracts';
 import { IServiceContainer } from '../../ioc/types';
@@ -79,7 +79,7 @@ export class CodeExecutionHelper implements ICodeExecutionHelper {
             // Read result from the normalization script from stdout, and resolve the promise when done.
             let normalized = '';
             observable.out.subscribe({
-                next: (output) => {
+                next: (output: Output<string>) => {
                     if (output.source === 'stdout') {
                         normalized += output.out;
                     }
