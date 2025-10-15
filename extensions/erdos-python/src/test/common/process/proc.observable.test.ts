@@ -9,6 +9,7 @@ import { createDeferred } from '../../../client/common/utils/async';
 import { isOs, OSType } from '../../common';
 import { getExtensionSettings } from '../../extensionSettings';
 import { initialize } from './../../initialize';
+import type { Output } from '../../../client/common/process/types';
 
 use(chaiAsPromised.default);
 
@@ -42,7 +43,7 @@ suite('ProcessService', () => {
 
         expect(result).not.to.be.an('undefined', 'result is undefined');
         result.out.subscribe(
-            (output) => {
+            (output: Output<string>) => {
                 // Ignore line breaks.
                 if (output.out.trim().length === 0) {
                     return;
@@ -86,7 +87,7 @@ suite('ProcessService', () => {
 
         expect(result).not.to.be.an('undefined', 'result is undefined');
         result.out.subscribe(
-            (output) => {
+            (output: Output<string>) => {
                 // Ignore line breaks.
                 if (output.out.trim().length === 0) {
                     return;
@@ -126,7 +127,7 @@ suite('ProcessService', () => {
         def.promise.then(done).catch(done);
         expect(result).not.to.be.an('undefined', 'result is undefined');
         result.out.subscribe(
-            (output) => {
+            (output: Output<string>) => {
                 const value = output.out.trim();
                 if (value === '1') {
                     cancellationToken.cancel();
@@ -171,7 +172,7 @@ suite('ProcessService', () => {
 
         expect(result).not.to.be.an('undefined', 'result is undefined');
         result.out.subscribe(
-            (output) => {
+            (output: Output<string>) => {
                 const value = output.out.trim();
                 // Ignore line breaks.
                 if (value.length === 0) {
@@ -233,7 +234,7 @@ suite('ProcessService', () => {
 
         expect(result).not.to.be.an('undefined', 'result is undefined');
         result.out.subscribe(
-            (output) => {
+            (output: Output<string>) => {
                 const value = output.out.trim();
                 // Ignore line breaks.
                 if (value.length === 0) {
@@ -262,7 +263,7 @@ suite('ProcessService', () => {
 
         expect(result).not.to.be.an('undefined', 'result is undefined.');
         result.out.subscribe(
-            (_output) => {
+            (_output: Output<string>) => {
                 done("Output received, when we're expecting an error to be thrown.");
             },
             (ex: Error) => {
@@ -281,10 +282,10 @@ suite('ProcessService', () => {
 
         expect(result).not.to.be.an('undefined', 'result is undefined.');
         result.out.subscribe(
-            (_output) => {
+            (_output: Output<string>) => {
                 done("Output received, when we're expecting an error to be thrown.");
             },
-            (ex) => {
+            (ex: unknown) => {
                 expect(ex).to.have.property('code', 'ENOENT', 'Invalid error code');
                 done();
             },
@@ -300,7 +301,7 @@ suite('ProcessService', () => {
 
         expect(result).not.to.be.an('undefined', 'result is undefined.');
         result.out.subscribe(
-            (output) => {
+            (output: Output<string>) => {
                 done(`Output received, when we\'re not expecting any, ${JSON.stringify(output)}`);
             },
             done,
