@@ -144,15 +144,22 @@ export class ProductContribution implements IWorkbenchContribution {
 				return;
 			}
 
-			const lastVersion = parseVersion(storageService.get(ProductContribution.KEY, StorageScope.APPLICATION, ''));
-			const currentVersion = parseVersion(productService.version);
+			const storedVersion = storageService.get(ProductContribution.KEY, StorageScope.APPLICATION, '');
+			
+			// Use Erdos version for release notes instead of VSCode version
+			const currentVersionString = productService.erdosVersion || productService.version;
+			
+			const lastVersion = parseVersion(storedVersion);
+			const currentVersion = parseVersion(currentVersionString);
 			const shouldShowReleaseNotes = configurationService.getValue<boolean>('update.showReleaseNotes');
 			const releaseNotesUrl = productService.releaseNotesUrl;
 
-			// was there a major/minor update? if so, open release notes
 			if (shouldShowReleaseNotes && !environmentService.skipReleaseNotes && releaseNotesUrl && lastVersion && currentVersion && isMajorMinorUpdate(lastVersion, currentVersion)) {
-				showReleaseNotesInEditor(instantiationService, productService.version, false)
-					.then(undefined, () => {
+				showReleaseNotesInEditor(instantiationService, currentVersionString, false)
+					.then((success) => {
+						// Release notes shown successfully in editor
+					}, (error) => {
+						// Fallback to external URL notification
 						notificationService.prompt(
 							severity.Info,
 							nls.localize('read the release notes', "Welcome to {0} v{1}! Would you like to read the Release Notes?", productService.nameLong, productService.version),
@@ -168,7 +175,7 @@ export class ProductContribution implements IWorkbenchContribution {
 					});
 			}
 
-			storageService.store(ProductContribution.KEY, productService.version, StorageScope.APPLICATION, StorageTarget.MACHINE);
+			storageService.store(ProductContribution.KEY, currentVersionString, StorageScope.APPLICATION, StorageTarget.MACHINE);
 		});
 	}
 }
@@ -322,6 +329,7 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 		// For Erdos, show version information from the update
 		const updateVersion = update.version || 'unknown';
 		const currentVersion = this.productService.erdosVersion ?? this.productService.version;
+		const productVersion = update.productVersion ?? update.version;
 
 		this.notificationService.prompt(
 			severity.Info,
@@ -329,6 +337,11 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 			[{
 				label: nls.localize('download update', "Download Update"),
 				run: () => this.updateService.downloadUpdate()
+			}, {
+				label: nls.localize('releaseNotes', "Release Notes"),
+				run: () => {
+					this.instantiationService.invokeFunction(accessor => showReleaseNotes(accessor, productVersion));
+				}
 			}, {
 				label: nls.localize('later', "Later"),
 				run: () => { }

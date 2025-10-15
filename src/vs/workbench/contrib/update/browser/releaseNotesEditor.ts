@@ -237,8 +237,8 @@ export class ReleaseNotesManager extends Disposable {
 				throw new Error('Failed to fetch release notes');
 			}
 
-			if (!rawText || (!/^#\s/.test(rawText) && !useCurrentFile)) {
-				throw new Error('Invalid release notes');
+			if (!rawText) {
+				throw new Error('No release notes content');
 			}
 
 			return { text: patchKeybindings(rawText), base: baseUri };
@@ -302,8 +302,11 @@ export class ReleaseNotesManager extends Disposable {
 			}]
 		});
 
+		// renderMarkdownDocument returns TrustedHTML object with toJSON() method, extract the actual string
+		const htmlContent: string = JSON.parse(JSON.stringify(content));
+		
 		// Remove HTML comment markers around table of contents navigation
-		const processedContent = content
+		const processedContent = htmlContent
 			.replace(/<!--\s*TOC\s*/gi, '')
 			.replace(/\s*Navigation End\s*-->/gi, '');
 
@@ -311,7 +314,7 @@ export class ReleaseNotesManager extends Disposable {
 		const css = colorMap ? generateTokensCSSForColorMap(colorMap) : '';
 		const showReleaseNotes = Boolean(this._configurationService.getValue<boolean>('update.showReleaseNotes'));
 
-		return `<!DOCTYPE html>
+		const finalHtml = `<!DOCTYPE html>
 		<html>
 			<head>
 				<base href="${asWebviewUri(fileContent.base).toString(true)}/" >
@@ -626,6 +629,8 @@ export class ReleaseNotesManager extends Disposable {
 				</script>
 			</body>
 		</html>`;
+		
+		return finalHtml;
 	}
 
 	private onDidChangeConfiguration(e: IConfigurationChangeEvent): void {

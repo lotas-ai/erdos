@@ -458,7 +458,7 @@ export class CustomMenubarControl extends MenubarControl {
 		}
 	}
 
-	private getUpdateAction(): IAction | null {
+	private getUpdateAction(): Action | null {
 		const state = this.updateService.state;
 
 		switch (state.type) {
@@ -507,7 +507,7 @@ export class CustomMenubarControl extends MenubarControl {
 		return disableMenuBarAltBehavior;
 	}
 
-	private insertActionsBefore(nextAction: IAction, target: IAction[]): void {
+	private insertActionsBefore(nextAction: IAction, target: IAction[], store: DisposableStore): void {
 		switch (nextAction.id) {
 			case OpenRecentAction.ID:
 				target.push(...this.getOpenRecentActions());
@@ -518,6 +518,7 @@ export class CustomMenubarControl extends MenubarControl {
 					const updateAction = this.getUpdateAction();
 					if (updateAction) {
 						updateAction.label = mnemonicMenuLabel(updateAction.label);
+						store.add(updateAction);
 						target.push(updateAction);
 						target.push(new Separator());
 					}
@@ -625,7 +626,7 @@ export class CustomMenubarControl extends MenubarControl {
 			target.splice(0);
 
 			for (const menuItem of menuActions) {
-				this.insertActionsBefore(menuItem, target);
+				this.insertActionsBefore(menuItem, target, store);
 
 				if (menuItem instanceof Separator) {
 					target.push(menuItem);

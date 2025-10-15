@@ -116,7 +116,7 @@ export class Win32UpdateService extends AbstractUpdateService implements IRelaun
 		let platform = `win32-${process.arch}`;
 
 		if (getUpdateType() === UpdateType.Archive) {
-			platform += '-archive';
+			// Don't add -archive suffix, keep platform as-is
 		} else if (this.productService.target === 'user') {
 			platform += '-user';
 		}

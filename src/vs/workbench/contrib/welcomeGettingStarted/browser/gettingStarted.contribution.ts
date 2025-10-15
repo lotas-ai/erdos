@@ -32,8 +32,24 @@ import { Categories } from '../../../../platform/action/common/actionCommonCateg
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { AccessibleViewRegistry } from '../../../../platform/accessibility/browser/accessibleViewRegistry.js';
 import { GettingStartedAccessibleView } from './gettingStartedAccessibleView.js';
+import { URI } from '../../../../base/common/uri.js';
 
 export * as icons from './gettingStartedIcons.js';
+
+function getWelcomeFileUri(): URI {
+	const relativePath = 'vs/workbench/contrib/welcomeGettingStarted/browser/resources/Welcome.md';
+	
+	// Use standard FileAccess resolution - this works for packaged apps
+	// and will resolve correctly based on _VSCODE_FILE_ROOT
+	const uri = FileAccess.asFileUri(relativePath);
+	
+	// Console log the path being used
+	console.log(`[Welcome.md gettingStarted] Using path: ${uri.toString()}`);
+	console.log(`[Welcome.md gettingStarted] fsPath: ${uri.fsPath}`);
+	console.log(`[Welcome.md gettingStarted] _VSCODE_FILE_ROOT: ${globalThis._VSCODE_FILE_ROOT}`);
+	
+	return uri;
+}
 
 registerAction2(class extends Action2 {
 	constructor() {
@@ -90,7 +106,7 @@ registerAction2(class extends Action2 {
 
 		} else {
 			// Open our Welcome.md in Markdown preview instead of the default Welcome page
-			const welcomeUri = FileAccess.asFileUri('vs/workbench/contrib/welcomeGettingStarted/browser/resources/Welcome.md');
+			const welcomeUri = getWelcomeFileUri();
 			commandService.executeCommand('markdown.showPreview', welcomeUri, undefined, { locked: true })
 				.catch(async () => {
 					// Fallback: open raw markdown in editor

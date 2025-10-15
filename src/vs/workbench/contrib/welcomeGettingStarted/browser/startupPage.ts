@@ -204,7 +204,7 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 		}
 
 		this.openedWelcomePreview = true;
-		const welcomeUri = FileAccess.asFileUri('vs/workbench/contrib/welcomeGettingStarted/browser/resources/Welcome.md');
+		const welcomeUri = await this.getWelcomeFileUri();
 
 		try {
 			// Prefer Markdown preview for the Welcome guide.
@@ -214,6 +214,54 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 			this.logService.error('[StartupPage] Failed to open Welcome.md preview, falling back to editor', error);
 			await this.editorService.openEditor({ resource: welcomeUri, options: { pinned: false } });
 		}
+	}
+
+	private async getWelcomeFileUri(): Promise<URI> {
+		const relativePath = 'vs/workbench/contrib/welcomeGettingStarted/browser/resources/Welcome.md';
+		
+		// Try standard FileAccess resolution first
+		const standardUri = FileAccess.asFileUri(relativePath);
+		
+		// Console log the full path being searched
+		console.log(`[Welcome.md Search] Searching standard path: ${standardUri.toString()}`);
+		console.log(`[Welcome.md Search] Standard path fsPath: ${standardUri.fsPath}`);
+		
+		try {
+			const exists = await this.fileService.exists(standardUri);
+			console.log(`[Welcome.md Search] Standard path exists: ${exists}`);
+			if (exists) {
+				return standardUri;
+			}
+		} catch (error) {
+			console.error(`[Welcome.md Search] Error checking standard path: ${error}`);
+		}
+
+		// If standard path fails, try out-build directory (for development builds)
+		const fileRoot = globalThis._VSCODE_FILE_ROOT;
+		console.log(`[Welcome.md Search] _VSCODE_FILE_ROOT: ${fileRoot}`);
+		
+		if (fileRoot && fileRoot.includes('/out/')) {
+			const buildRoot = fileRoot.replace('/out/', '/out-build/');
+			const buildUri = URI.parse(buildRoot + relativePath);
+			
+			console.log(`[Welcome.md Search] Searching out-build path: ${buildUri.toString()}`);
+			console.log(`[Welcome.md Search] Out-build path fsPath: ${buildUri.fsPath}`);
+			
+			try {
+				const exists = await this.fileService.exists(buildUri);
+				console.log(`[Welcome.md Search] Out-build path exists: ${exists}`);
+				if (exists) {
+					return buildUri;
+				}
+			} catch (error) {
+				console.error(`[Welcome.md Search] Error checking out-build path: ${error}`);
+			}
+		}
+
+		// Final fallback - return standard URI (will trigger error handling in caller)
+		console.warn(`[Welcome.md Search] All paths failed, using fallback: ${standardUri.toString()}`);
+		console.warn(`[Welcome.md Search] Fallback fsPath: ${standardUri.fsPath}`);
+		return standardUri;
 	}
 
 	private openedWelcomePreview = false;
