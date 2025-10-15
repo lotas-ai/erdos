@@ -328,6 +328,7 @@ export interface MainThreadTextEditorsShape extends IDisposable {
 	$trySetOptions(id: string, options: ITextEditorConfigurationUpdate): Promise<void>;
 	$trySetDecorations(id: string, key: string, ranges: editorCommon.IDecorationOptions[]): Promise<void>;
 	$trySetDecorationsFast(id: string, key: string, ranges: number[]): Promise<void>;
+	$tryGetDecorations(id: string, key: string, range?: IRange): Promise<editorCommon.IDecorationOptions[]>;
 	$tryRevealRange(id: string, range: IRange, revealType: TextEditorRevealType): Promise<void>;
 	$trySetSelections(id: string, selections: ISelection[]): Promise<void>;
 	$tryApplyEdits(id: string, modelVersionId: number, edits: ISingleEditOperation[], opts: IApplyEditsOptions): Promise<boolean>;
@@ -756,15 +757,23 @@ export interface MainThreadTelemetryShape extends IDisposable {
 export interface MainThreadEditorInsetsShape extends IDisposable {
 	$createEditorInset(handle: number, id: string, uri: UriComponents, line: number, height: number, options: IWebviewContentOptions, extensionId: ExtensionIdentifier, extensionLocation: UriComponents): Promise<void>;
 	$disposeEditorInset(handle: number): void;
+	$updateEditorInsetHeight(handle: number, newHeight: number): void;
 
 	$setHtml(handle: number, value: string): void;
 	$setOptions(handle: number, options: IWebviewContentOptions): void;
 	$postMessage(handle: number, value: any): Promise<boolean>;
+	
+	$createNativeViewZone(handle: number, id: string, uri: UriComponents, afterLineNumber: number, heightInPx: number): Promise<void>;
+	$appendANSIText(handle: number, text: string): void;
+	$updateViewZoneHeight(handle: number, newHeight: number): void;
+	$updateViewZonePosition(handle: number, afterLineNumber: number): void;
+	$disposeViewZone(handle: number): void;
 }
 
 export interface ExtHostEditorInsetsShape {
 	$onDidDispose(handle: number): void;
 	$onDidReceiveMessage(handle: number, message: any): void;
+	$onDidDisposeViewZone(handle: number): void;
 }
 
 //#region --- tabs model

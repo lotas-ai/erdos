@@ -217,6 +217,12 @@ export class ViewZones extends ViewPart {
 						return;
 					}
 					zonesHaveChanged = this._layoutZone(whitespaceAccessor, id) || zonesHaveChanged;
+				},
+				updateZone: (id: string, newProps: Partial<IViewZone>): void => {
+					if (!id) {
+						return;
+					}
+					zonesHaveChanged = this._updateZone(whitespaceAccessor, id, newProps) || zonesHaveChanged;
 				}
 			};
 
@@ -226,6 +232,7 @@ export class ViewZones extends ViewPart {
 			changeAccessor.addZone = invalidFunc;
 			changeAccessor.removeZone = invalidFunc;
 			changeAccessor.layoutZone = invalidFunc;
+			changeAccessor.updateZone = invalidFunc;
 		});
 
 		return zonesHaveChanged;
@@ -300,6 +307,29 @@ export class ViewZones extends ViewPart {
 			whitespaceAccessor.changeOneWhitespace(zone.whitespaceId, props.afterViewLineNumber, props.heightInPx);
 			// TODO@Alex: change `newOrdinal` too
 
+			this._safeCallOnComputedHeight(zone.delegate, props.heightInPx);
+			this.setShouldRender();
+
+			return true;
+		}
+		return false;
+	}
+
+	private _updateZone(whitespaceAccessor: IWhitespaceChangeAccessor, id: string, newProps: Partial<IViewZone>): boolean {
+		if (this._zones.hasOwnProperty(id)) {
+			const zone = this._zones[id];
+			
+			// Update the delegate's properties
+			Object.assign(zone.delegate, newProps);
+			
+			// Recompute whitespace properties with updated delegate
+			const props = this._computeWhitespaceProps(zone.delegate);
+			zone.isInHiddenArea = props.isInHiddenArea;
+			
+			// Update whitespace height/position
+			whitespaceAccessor.changeOneWhitespace(zone.whitespaceId, props.afterViewLineNumber, props.heightInPx);
+			
+			// Notify height change
 			this._safeCallOnComputedHeight(zone.delegate, props.heightInPx);
 			this.setShouldRender();
 

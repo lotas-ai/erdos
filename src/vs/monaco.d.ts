@@ -1685,6 +1685,11 @@ declare namespace monaco.editor {
 		 */
 		stickiness?: TrackedRangeStickiness;
 		/**
+		 * Custom metadata that can be attached to this decoration.
+		 * Used by extensions to store arbitrary data like chunk IDs.
+		 */
+		metadata?: any;
+		/**
 		 * CSS class name describing the decoration.
 		 */
 		className?: string | null;
@@ -5524,6 +5529,12 @@ declare namespace monaco.editor {
 		 * The editor will rescan the `afterLineNumber` and `afterColumn` properties of a view zone.
 		 */
 		layoutZone(id: string): void;
+		/**
+		 * Update a zone's properties (height, etc.) without recreating it.
+		 * @param id A unique identifier to the view zone, as returned by the `addZone` call.
+		 * @param newProps Partial properties to update
+		 */
+		updateZone(id: string, newProps: Partial<IViewZone>): void;
 	}
 
 	/**

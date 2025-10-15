@@ -162,7 +162,9 @@ export class CodeCellViewModel extends BaseCellViewModel implements ICellViewMod
 			}
 
 			this._outputCollection.splice(splice.start, splice.deleteCount, ...splice.newOutputs.map(() => 0));
-			removedOutputs.push(...this._outputViewModels.splice(splice.start, splice.deleteCount, ...splice.newOutputs.map(output => new CellOutputViewModel(this, output, this._notebookService))));
+			
+			const newOutputViewModels = splice.newOutputs.map(output => new CellOutputViewModel(this, output, this._notebookService));
+			removedOutputs.push(...this._outputViewModels.splice(splice.start, splice.deleteCount, ...newOutputViewModels));
 
 			this._outputsTop = null;
 			this._onDidChangeOutputs.fire(splice);

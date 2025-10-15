@@ -156,6 +156,11 @@ export interface IModelDecorationOptions {
 	 */
 	stickiness?: TrackedRangeStickiness;
 	/**
+	 * Custom metadata that can be attached to this decoration.
+	 * Used by extensions to store arbitrary data like chunk IDs.
+	 */
+	metadata?: any;
+	/**
 	 * CSS class name describing the decoration.
 	 */
 	className?: string | null;

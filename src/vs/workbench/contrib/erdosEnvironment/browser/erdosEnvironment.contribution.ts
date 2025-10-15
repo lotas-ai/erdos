@@ -25,10 +25,12 @@ import {
 	ERDOS_ENVIRONMENT_VIEW_CONTAINER_ID,
 	ERDOS_PYTHON_ENVIRONMENTS_VIEW_ID,
 	ERDOS_R_PACKAGES_VIEW_ID,
-	ERDOS_PYTHON_PACKAGES_VIEW_ID
+	ERDOS_PYTHON_PACKAGES_VIEW_ID,
+	ERDOS_VARIABLES_VIEW_ID
 } from '../common/environmentTypes.js';
 import { PythonEnvironmentsView } from './views/pythonEnvironmentsView.js';
 import { RPackagesView, PythonPackagesView } from './views/packagesView.js';
+import { VariablesView } from '../../erdosVariables/browser/variablesView.js';
 
 
 // Register the environment view icon
@@ -73,8 +75,20 @@ const VIEW_CONTAINER: ViewContainer = Registry.as<IViewContainersRegistry>(ViewC
 	isDefault: false
 });
 
-// Register Views - PythonEnvironmentsView, RPackagesView, and PythonPackagesView inside the pane
+// Register Views - PythonEnvironmentsView, RPackagesView, PythonPackagesView, and VariablesView inside the pane
 Registry.as<IViewsRegistry>(ViewContainerExtensions.ViewsRegistry).registerViews([{
+	id: ERDOS_VARIABLES_VIEW_ID,
+	name: {
+		value: localize('erdos.environment.variables', "Variables"),
+		original: 'Variables'
+	},
+	containerIcon: environmentViewIcon,
+	canMoveView: true,
+	canToggleVisibility: true,
+	ctorDescriptor: new SyncDescriptor(VariablesView),
+	order: 0,
+	weight: 50
+}, {
 	id: ERDOS_PYTHON_ENVIRONMENTS_VIEW_ID,
 	name: {
 		value: localize('erdos.environment.pythonEnvironments', "Python Environments"),
@@ -111,6 +125,9 @@ Registry.as<IViewsRegistry>(ViewContainerExtensions.ViewsRegistry).registerViews
 	order: 3,
 	weight: 30
 }], VIEW_CONTAINER);
+
+// Import Variables contribution to ensure it's registered
+import '../../erdosVariables/browser/erdosVariables.contribution.js';
 
 // Register the Environment Service as a singleton
 registerSingleton(IErdosEnvironmentService, EnvironmentService, InstantiationType.Delayed);

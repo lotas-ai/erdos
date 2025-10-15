@@ -82,42 +82,47 @@ except Exception:
     pass
 
 # Add lotas directory (parent of erdos) to path so we can import erdos module
-lotas_dir = {repr(os.path.dirname(os.path.dirname(__file__)))}
-sys.path.insert(0, lotas_dir)
+_lotas_dir = {repr(os.path.dirname(os.path.dirname(__file__)))}
+sys.path.insert(0, _lotas_dir)
 
 from erdos.environment import EnvironmentService
 from erdos.ui import UiService
 from erdos.help import HelpService
+from erdos.variables import VariablesService
 
 from IPython import get_ipython
-kernel = get_ipython().kernel
+_kernel = get_ipython().kernel
 
-env_service = EnvironmentService()
-kernel.comm_manager.register_target('environment', env_service.on_comm_open)
+_env_service = EnvironmentService()
+_kernel.comm_manager.register_target('environment', _env_service.on_comm_open)
 
-ui_service = UiService()
-kernel.comm_manager.register_target('erdos.ui', ui_service.on_comm_open)
+_ui_service = UiService()
+_kernel.comm_manager.register_target('erdos.ui', _ui_service.on_comm_open)
 
-help_service = HelpService()
-kernel.comm_manager.register_target('help', help_service.on_comm_open)
-help_service.start()
+_help_service = HelpService()
+_kernel.comm_manager.register_target('help', _help_service.on_comm_open)
+_help_service.start()
 
-kernel.session_mode = {repr(self.session_mode)}
-kernel.ui_service = ui_service
-kernel.environment_service = env_service
-kernel.help_service = help_service
+_variables_service = VariablesService()
+_kernel.comm_manager.register_target('variables', _variables_service.on_comm_open)
+
+_kernel.session_mode = {repr(self.session_mode)}
+_kernel.ui_service = _ui_service
+_kernel.environment_service = _env_service
+_kernel.help_service = _help_service
+_kernel.variables_service = _variables_service
 
 # Track working directory changes
-kernel._erdos_last_cwd = os.getcwd()
+_kernel._erdos_last_cwd = os.getcwd()
 
-def check_cwd_change():
+def _check_cwd_change():
     \"\"\"Post-execute hook to detect working directory changes.\"\"\"
     current_cwd = os.getcwd()
-    if current_cwd != kernel._erdos_last_cwd:
-        kernel._erdos_last_cwd = current_cwd
+    if current_cwd != _kernel._erdos_last_cwd:
+        _kernel._erdos_last_cwd = current_cwd
         # Emit working_directory event to all UI comms
-        if hasattr(kernel, 'ui_service') and kernel.ui_service._comms:
-            for comm in kernel.ui_service._comms.values():
+        if hasattr(_kernel, 'ui_service') and _kernel.ui_service._comms:
+            for comm in _kernel.ui_service._comms.values():
                 try:
                     comm.send({{
                         "method": "working_directory",
@@ -128,20 +133,29 @@ def check_cwd_change():
                 except Exception:
                     pass
 
-get_ipython().events.register('post_execute', check_cwd_change)
+def _check_variables_change():
+    \"\"\"Post-execute hook to detect variable changes.\"\"\"
+    if hasattr(_kernel, 'variables_service'):
+        try:
+            _kernel.variables_service.update()
+        except Exception:
+            pass
 
-from IPython.core.magic import Magics, magics_class, line_magic
+get_ipython().events.register('post_execute', _check_cwd_change)
+get_ipython().events.register('post_execute', _check_variables_change)
 
-@magics_class
-class ErdosMagics(Magics):
-    @line_magic
+from IPython.core.magic import Magics as _Magics, magics_class as _magics_class, line_magic as _line_magic
+
+@_magics_class
+class _ErdosMagics(_Magics):
+    @_line_magic
     def clear(self, line):
-        kernel = self.shell.kernel
-        if hasattr(kernel, 'ui_service'):
-            session_mode = getattr(kernel, 'session_mode', 'console')
-            kernel.ui_service.clear_console(session_mode=session_mode)
+        _kernel = self.shell.kernel
+        if hasattr(_kernel, 'ui_service'):
+            session_mode = getattr(_kernel, 'session_mode', 'console')
+            _kernel.ui_service.clear_console(session_mode=session_mode)
 
-get_ipython().register_magics(ErdosMagics)
+get_ipython().register_magics(_ErdosMagics)
 """
         
         msg_id = self.kernel_client.execute(setup_code, silent=False, store_history=False)

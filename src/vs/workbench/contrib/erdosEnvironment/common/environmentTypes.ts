@@ -87,4 +87,5 @@ export const ERDOS_ENVIRONMENT_VIEW_CONTAINER_ID = 'erdosEnvironment';
 export const ERDOS_PYTHON_ENVIRONMENTS_VIEW_ID = 'erdosEnvironment.pythonEnvironments';
 export const ERDOS_R_PACKAGES_VIEW_ID = 'erdosEnvironment.rPackages';
 export const ERDOS_PYTHON_PACKAGES_VIEW_ID = 'erdosEnvironment.pythonPackages';
+export const ERDOS_VARIABLES_VIEW_ID = 'erdosEnvironment.variables';
 

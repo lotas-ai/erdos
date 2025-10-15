@@ -254,9 +254,10 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 			let newContent = '';
 			let uri: any;
 			
-			let isCreateMode = false;
-			let isAppendMode = false;
-			let jupytextOptions = { extension: '.py', format_name: 'percent' };
+		let isCreateMode = false;
+		let isAppendMode = false;
+		let jupytextOptions = { extension: '.py', format_name: 'percent' };
+		let originalNotebookMetadata: any = {};
 			
 			if (oldString === '') {
 				const effectiveContent = await this.documentManager.getEffectiveFileContent(filePath);
@@ -272,7 +273,8 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 					if (isNotebookAppend) {
 						try {
 							// Convert original JSON to jupytext format for appending
-							const options = this.jupytextService.getNotebookJupytextOptions(currentContent);
+							const fileUri = URI.file(filePath);
+							const options = this.jupytextService.getNotebookJupytextOptions(currentContent, fileUri);
 							const jupytextContent = this.jupytextService.convertNotebookToText(
 								currentContent, 
 								options
@@ -325,26 +327,31 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 					uri = fileResult.uri;
 				}
 				
-			// For .ipynb files, we need to work with jupytext format for the search/replace
-			// but keep the original JSON for storage
-			const isNotebook = this.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
-			let workingContent = currentContent;
-			
-			if (isNotebook) {
-				try {
-					// Convert original JSON to jupytext format for processing
-					jupytextOptions = this.jupytextService.getNotebookJupytextOptions(currentContent);
-					const jupytextContent = this.jupytextService.convertNotebookToText(
-						currentContent, 
-						jupytextOptions
-					);
-					workingContent = jupytextContent;
-				} catch (error) {
-					console.error(`[SEARCH_REPLACE_COMMAND_DEBUG] Failed to convert notebook to jupytext:`, error);
-					this.logService.error('Failed to convert notebook to jupytext for search/replace:', error);
-					// Continue with original content if conversion fails
+				// For .ipynb files, we need to work with jupytext format for the search/replace
+				// but keep the original JSON for storage
+				const isNotebook = this.commonUtils.getFileExtension(filePath).toLowerCase() === 'ipynb';
+				let workingContent = currentContent;
+				
+				if (isNotebook) {
+					try {
+						// Preserve original notebook metadata for later restoration
+						const originalNotebook = JSON.parse(currentContent);
+						originalNotebookMetadata = originalNotebook.metadata || {};
+						
+						// Convert original JSON to jupytext format for processing
+						const fileUri = URI.file(filePath);
+						jupytextOptions = this.jupytextService.getNotebookJupytextOptions(currentContent, fileUri);
+						const jupytextContent = this.jupytextService.convertNotebookToText(
+							currentContent, 
+							jupytextOptions
+						);
+						workingContent = jupytextContent;
+					} catch (error) {
+						console.error(`[SEARCH_REPLACE_COMMAND_DEBUG] Failed to convert notebook to jupytext:`, error);
+						this.logService.error('Failed to convert notebook to jupytext for search/replace:', error);
+						// Continue with original content if conversion fails
+					}
 				}
-			}
 				
 				const flexiblePattern = this.createFlexibleWhitespacePattern(oldString);
 				const regex = new RegExp(flexiblePattern, 'g');
@@ -364,7 +371,19 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 					newContent, 
 					jupytextOptions
 				);
-				processedContent = notebookJson;
+				
+				// Restore notebook metadata without forcing a single language
+				const convertedNotebook = JSON.parse(notebookJson);
+				
+				// Only restore non-language metadata to avoid forcing all cells to one language
+				const { language_info, kernelspec, ...otherOriginalMetadata } = originalNotebookMetadata;
+				convertedNotebook.metadata = { 
+					...convertedNotebook.metadata, 
+					...otherOriginalMetadata
+					// Don't restore language_info or kernelspec - let individual cells determine their own languages
+				};
+				
+				processedContent = JSON.stringify(convertedNotebook, null, 2);
 				
 				if (isCreateMode) {
 					const parentDir = URI.joinPath(uri, '..');
@@ -389,7 +408,7 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 				const notebookModel = modelRef.object.notebook;
 				
 				// Parse the new notebook structure
-				const newNotebook = JSON.parse(notebookJson);
+				const newNotebook = JSON.parse(processedContent);
 					
 				// Convert cells to VS Code format
 				const newCells = newNotebook.cells.map((cell: any, cellIndex: number) => {
@@ -417,11 +436,32 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 					
 					const preservedOutputs = existingCell?.outputs || [];
 							
+					// Determine correct language based on INDIVIDUAL CELL metadata, not notebook metadata
+					let cellLanguage = 'python';
+					let cellMime = 'text/x-python';
+					
+					if (cell.cell_type === 'markdown') {
+						cellLanguage = 'markdown';
+						cellMime = 'text/markdown';
+					} else if (cell.cell_type === 'code') {
+						// Use individual cell's language metadata - no fallback to notebook metadata
+						const cellVscodeLanguage = cell.metadata?.vscode?.languageId;
+						if (cellVscodeLanguage === 'r') {
+							cellLanguage = 'r';
+							cellMime = 'text/x-rsrc';
+						} else if (cellVscodeLanguage === 'python') {
+							cellLanguage = 'python';
+							cellMime = 'text/x-python';
+						}
+						// If no explicit languageId, keep default (python) - don't force based on notebook metadata
+					}
+					
+					
 					const newCellData = {
 						cellKind: cell.cell_type === 'markdown' ? 1 : 2,
 						source: Array.isArray(cell.source) ? cell.source.join('') : cell.source,
-						language: cell.cell_type === 'code' ? 'python' : 'markdown',
-						mime: cell.cell_type === 'markdown' ? 'text/markdown' : 'text/x-python',
+						language: cellLanguage,
+						mime: cellMime,
 						metadata: vscodeMetadata,
 						outputs: preservedOutputs
 					};
@@ -892,7 +932,8 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 				
 				if (effectiveContent && isNotebook) {
 					try {
-						jupytextOptions = this.jupytextService.getNotebookJupytextOptions(effectiveContent);
+						const fileUri = URI.file(filePath);
+						jupytextOptions = this.jupytextService.getNotebookJupytextOptions(effectiveContent, fileUri);
 						const convertedContent = this.jupytextService.convertNotebookToText(
 							effectiveContent, 
 							jupytextOptions
@@ -967,7 +1008,9 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 			
 			if (isNotebook) {
 				try {
-					jupytextOptions = this.jupytextService.getNotebookJupytextOptions(effectiveContent);
+					
+					const fileUri = URI.file(filePath);
+					jupytextOptions = this.jupytextService.getNotebookJupytextOptions(effectiveContent, fileUri);
 					const convertedContent = this.jupytextService.convertNotebookToText(
 						effectiveContent, 
 						jupytextOptions
@@ -1380,7 +1423,8 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 				
 				if (effectiveContent !== null && isNotebook) {
 					try {
-						jupytextOptions = context.jupytextService.getNotebookJupytextOptions(effectiveContent);
+						const fileUri = URI.file(filePath);
+						jupytextOptions = context.jupytextService.getNotebookJupytextOptions(effectiveContent, fileUri);
 						const convertedContent = context.jupytextService.convertNotebookToText(
 							effectiveContent, 
 							jupytextOptions
@@ -1486,7 +1530,8 @@ export class SearchReplaceCommandHandler extends Disposable implements ISearchRe
 			
 			if (effectiveContent !== null && isNotebook) {
 				try {
-					jupytextOptions = context.jupytextService.getNotebookJupytextOptions(effectiveContent);
+					const fileUri = URI.file(filePath);
+					jupytextOptions = context.jupytextService.getNotebookJupytextOptions(effectiveContent, fileUri);
 					const convertedContent = context.jupytextService.convertNotebookToText(
 						effectiveContent, 
 						jupytextOptions

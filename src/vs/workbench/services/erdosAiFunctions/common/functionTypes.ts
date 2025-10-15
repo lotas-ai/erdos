@@ -218,7 +218,7 @@ export interface CallContext {
 	jupytextService: {
 		convertNotebookToText(notebookContent: string, options: { extension: string; format_name: string }): string;
 		convertTextToNotebook(textContent: string, options: { extension: string; format_name: string }): string;
-		getNotebookJupytextOptions(notebookContent: string): { extension: string; format_name: string };
+		getNotebookJupytextOptions(notebookContent: string, fileUri?: any): { extension: string; format_name: string };
 	};
 	fileResolverService: {
 		createResolverContext(): any;

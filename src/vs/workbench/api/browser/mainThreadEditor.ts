@@ -438,6 +438,50 @@ export class MainThreadTextEditor {
 		this._codeEditor.setDecorationsByTypeFast(key, ranges);
 	}
 
+	public getDecorations(key: string, range?: IRange): IDecorationOptions[] {
+		if (!this._model || !this._codeEditor) {
+			return [];
+		}
+		
+		// Access the editor's internal decoration tracking
+		const editor = this._codeEditor as any;
+		const decorationIds: string[] = editor._decorationTypeKeysToIds?.[key] || [];
+		
+		if (decorationIds.length === 0) {
+			return [];
+		}
+		
+		const result: IDecorationOptions[] = [];
+		
+		// Get each decoration by its ID
+		for (const id of decorationIds) {
+			const decoration = this._model.getDecorationRange(id);
+			if (!decoration) {
+				continue;
+			}
+			
+			// If range is specified, check if decoration is in range
+			if (range && !Range.areIntersecting(decoration, range)) {
+				continue;
+			}
+			
+			// Get decoration options
+			const options = this._model.getDecorationOptions(id);
+			if (!options) {
+				continue;
+			}
+			
+			result.push({
+				range: decoration,
+				hoverMessage: options.hoverMessage || undefined,
+				renderOptions: options as any,
+				metadata: options.metadata
+			});
+		}
+		
+		return result;
+	}
+
 	public revealRange(range: IRange, revealType: TextEditorRevealType): void {
 		if (!this._codeEditor) {
 			return;

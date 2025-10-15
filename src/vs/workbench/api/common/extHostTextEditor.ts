@@ -564,6 +564,16 @@ export class ExtHostTextEditor {
 					}
 				});
 			},
+			async getDecorationsInRange(decorationType: vscode.TextEditorDecorationType, range?: Range): Promise<readonly vscode.DecorationOptions[]> {
+				const internalRange = range ? TypeConverters.Range.from(range) : undefined;
+				const decorations = await _proxy.$tryGetDecorations(id, decorationType.key, internalRange);
+				return decorations.map(dec => ({
+					range: TypeConverters.Range.to(dec.range),
+					hoverMessage: dec.hoverMessage as any,
+					renderOptions: dec.renderOptions as any,
+					metadata: dec.metadata
+				}));
+			},
 			revealRange(range: Range, revealType: vscode.TextEditorRevealType): void {
 				that._runOnProxy(() => _proxy.$tryRevealRange(
 					id,

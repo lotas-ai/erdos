@@ -598,5 +598,16 @@ export class MonacoInput extends Disposable {
 	public addToHistory(code: string): void {
 		this._updateHistory(code);
 	}
+
+	public removeFromHistory(code: string): void {
+		const index = this._history.indexOf(code);
+		if (index !== -1) {
+			this._history.splice(index, 1);
+			// Reset history navigation if we're currently at this index
+			if (this._historyIndex >= index) {
+				this._historyIndex = Math.max(-1, this._historyIndex - 1);
+			}
+		}
+	}
 }
 

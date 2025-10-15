@@ -339,7 +339,8 @@ export class GrepHandler extends BaseFunctionHandler {
 				let searchContent = doc.content;
 				if (context.commonUtils.getFileExtension(display_path).toLowerCase() === 'ipynb') {
 					try {
-						const options = context.jupytextService.getNotebookJupytextOptions(doc.content);
+						const fileUri = await context.commonUtils.resolveFilePathToUri(display_path, context.fileResolverService.createResolverContext());
+						const options = context.jupytextService.getNotebookJupytextOptions(doc.content, fileUri);
 						searchContent = context.jupytextService.convertNotebookToText(
 							doc.content, 
 							options

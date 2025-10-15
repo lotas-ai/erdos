@@ -153,7 +153,8 @@ export async function activate(context: vscode.ExtensionContext) {
   const quartoExecutionCheckDisposable = vscode.commands.registerCommand(
     'quarto.isQuartoExecution',
     (executionId: string) => {
-      return quartoInlineOutputManager.isQuartoExecution(executionId);
+      const result = quartoInlineOutputManager.isQuartoExecution(executionId);
+      return result;
     }
   );
   context.subscriptions.push(quartoExecutionCheckDisposable);

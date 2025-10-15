@@ -10,6 +10,7 @@ import { IJupytextService } from '../../erdosAiIntegration/common/jupytextServic
 import { ICommonUtils } from '../../erdosAiUtils/common/commonUtils.js';
 import { reads } from '../../erdosAiIntegration/browser/jupytext/jupytext.js';
 import { CellNode } from '../../erdosAiIntegration/browser/jupytext/types.js';
+import { URI } from '../../../../base/common/uri.js';
 
 export class FileContentService extends Disposable implements IFileContentService {
 	readonly _serviceBrand: undefined;
@@ -43,7 +44,8 @@ export class FileContentService extends Disposable implements IFileContentServic
 					const notebook = JSON.parse(fileContent);
 					
 					// Convert to jupytext to get line mapping
-					const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
+					const uri = URI.file(filename);
+					const options = this.jupytextService.getNotebookJupytextOptions(fileContent, uri);
 					const jupytextContent = this.jupytextService.convertNotebookToText(
 						fileContent, 
 						options
@@ -113,7 +115,8 @@ export class FileContentService extends Disposable implements IFileContentServic
 						return result;
 					} catch (parseError) {
 						// If all else fails, fall back to regular jupytext processing
-						const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
+						const uri = URI.file(filename);
+						const options = this.jupytextService.getNotebookJupytextOptions(fileContent, uri);
 						const convertedContent = this.jupytextService.convertNotebookToText(
 							fileContent, 
 							options
@@ -126,7 +129,8 @@ export class FileContentService extends Disposable implements IFileContentServic
 			// Convert .ipynb files to jupytext format before any line processing (fallback case)
 			if (this.commonUtils.getFileExtension(filename).toLowerCase() === 'ipynb') {
 				try {
-					const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
+					const uri = URI.file(filename);
+					const options = this.jupytextService.getNotebookJupytextOptions(fileContent, uri);
 					const convertedContent = this.jupytextService.convertNotebookToText(
 						fileContent, 
 						options

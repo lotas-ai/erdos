@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { URI } from '../../../../base/common/uri.js';
 
 export const IJupytextService = createDecorator<IJupytextService>('jupytextService');
 
@@ -17,7 +18,7 @@ export interface IJupytextService {
 	
 	convertNotebookToText(notebookContent: string, options: JupytextOptions): string;
 	convertTextToNotebook(textContent: string, options: JupytextOptions): string;
-	getNotebookJupytextOptions(notebookContent: string): JupytextOptions;
+	getNotebookJupytextOptions(notebookContent: string, fileUri?: URI): JupytextOptions;
 }
 
 /**

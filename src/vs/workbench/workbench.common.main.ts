@@ -321,6 +321,9 @@ import './contrib/dataExplorer/browser/dataExplorer.contribution.js';
 // Terminal
 import './contrib/terminal/terminal.all.js';
 
+// Erdos History
+import './contrib/erdosHistory/browser/erdosHistory.contribution.js';
+
 // External terminal
 import './contrib/externalTerminal/browser/externalTerminal.contribution.js';
 

@@ -47,7 +47,8 @@ export class DocumentManager extends Disposable implements IDocumentManager {
 		
 		if (fileExtension === 'ipynb') {
 			try {
-				const options = this.jupytextService.getNotebookJupytextOptions(content);
+				const uri = URI.file(filePath);
+				const options = this.jupytextService.getNotebookJupytextOptions(content, uri);
 				const convertedContent = this.jupytextService.convertNotebookToText(
 					content, 
 					options

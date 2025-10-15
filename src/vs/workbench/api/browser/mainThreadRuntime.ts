@@ -15,6 +15,7 @@ import { ILanguageRuntimeMessage, type IDirectKernelClient } from '../../service
 import { SerializableObjectWithBuffers } from '../../services/extensions/common/proxyIdentifier.js';
 import { URI } from '../../../base/common/uri.js';
 import { CommandsRegistry } from '../../../platform/commands/common/commands.js';
+import { ICommandService } from '../../../platform/commands/common/commands.js';
 import { generateUuid } from '../../../base/common/uuid.js';
 import { IConsoleService } from '../../services/erdosConsole/common/consoleService.js';
 import { CodeAttributionSource } from '../../services/languageRuntime/common/codeExecution.js';
@@ -197,7 +198,8 @@ export class MainThreadRuntime implements MainThreadRuntimeShape, ILanguageRunti
 		@ISessionManager private readonly _sessionManager: ISessionManager,
 		@ILanguageRuntimeService private readonly _languageRuntimeService: ILanguageRuntimeService,
 		@ILogService private readonly _logService: ILogService,
-		@IConsoleService private readonly _consoleService: IConsoleService
+		@IConsoleService private readonly _consoleService: IConsoleService,
+		@ICommandService private readonly _commandService: ICommandService
 	) {
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostRuntime);
 
@@ -215,6 +217,20 @@ export class MainThreadRuntime implements MainThreadRuntimeShape, ILanguageRunti
 	$emitLanguageRuntimeMessage(handle: number, handled: boolean, message: SerializableObjectWithBuffers<ILanguageRuntimeMessage>): void {
 		const session = this.findSession(handle);
 		session.handleRuntimeMessage(message.value, handled);
+
+		// Check if this message is from a Quarto execution and route it to the Quarto extension
+		const msg = message.value;
+		if (msg.parent_id && this._quartoExecutionIds.has(msg.parent_id)) {
+			// Route output/stream/error messages to Quarto extension for inline display
+			if (msg.type === 'output' || msg.type === 'stream' || msg.type === 'error') {
+				this._commandService.executeCommand('quarto.handleInlineOutput', msg).then(
+					undefined,
+					(err: Error) => {
+						console.error(`[MainThreadRuntime] ERROR: Failed to route message to Quarto extension:`, err);
+					}
+				);
+			}
+		}
 	}
 
 	$emitLanguageRuntimeState(handle: number, clock: number, state: RuntimeState): void {

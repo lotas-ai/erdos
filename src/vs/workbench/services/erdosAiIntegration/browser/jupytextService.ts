@@ -8,11 +8,15 @@ import { reads, writes } from './jupytext/jupytext.js';
 import { NotebookNode } from './jupytext/types.js';
 import { IJupytextService, JupytextOptions } from '../common/jupytextService.js';
 import { SCRIPT_EXTENSIONS, sameLanguage } from './jupytext/languages.js';
+import { URI } from '../../../../base/common/uri.js';
+import { INotebookService } from '../../../contrib/notebook/common/notebookService.js';
 
 export class JupytextService extends Disposable implements IJupytextService {
 	declare readonly _serviceBrand: undefined;
 
-	constructor() {
+	constructor(
+		@INotebookService private readonly notebookService: INotebookService
+	) {
 		super();
 	}
 
@@ -20,8 +24,11 @@ export class JupytextService extends Disposable implements IJupytextService {
 		try {
 			// Parse and convert
 			const notebook: NotebookNode = JSON.parse(notebookContent);
-			return writes(notebook, options);
+			
+			const result = writes(notebook, options);
+			return result;
 		} catch (error) {
+			console.error('[JUPYTEXT_TO_TEXT] Conversion failed:', error);
 			throw new Error(`Failed to convert notebook to text: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
@@ -29,17 +36,39 @@ export class JupytextService extends Disposable implements IJupytextService {
 	convertTextToNotebook(textContent: string, options: JupytextOptions): string {
 		try {
 			// Convert text to notebook and return as JSON string
-			const notebook = reads(textContent, options);
-			return JSON.stringify(notebook, null, 2);
+			const readsResult = reads(textContent, options);
+			
+			// Handle both return types from reads()
+			const notebook: NotebookNode = 'notebook' in readsResult ? readsResult.notebook : readsResult;
+			
+		const result = JSON.stringify(notebook, null, 2);
+			return result;
 		} catch (error) {
+			console.error('[JUPYTEXT_TO_NOTEBOOK] Conversion failed:', error);
 			throw new Error(`Failed to convert text to notebook: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
-	getNotebookJupytextOptions(notebookContent: string): JupytextOptions {
+	getNotebookJupytextOptions(notebookContent: string, fileUri?: URI): JupytextOptions {
 		try {
-			const notebook: NotebookNode = JSON.parse(notebookContent);
-			const metadata = notebook.metadata || {};
+			// First, try to get metadata from in-memory model if available
+			let metadata: any = {};
+			let metadataSource = 'serialized-content';
+			
+			if (fileUri) {
+				const notebookModel = this.notebookService.getNotebookTextModel(fileUri);
+				if (notebookModel) {
+					metadata = notebookModel.metadata || {};
+					metadataSource = 'in-memory-model';
+				}
+			}
+			
+			// Fallback to parsing serialized content if no in-memory model
+			if (metadataSource === 'serialized-content') {
+				const notebook: NotebookNode = JSON.parse(notebookContent);
+				metadata = notebook.metadata || {};
+			}
+			
 			
 			// Use jupytext's exact logic from autoExtFromMetadata (formats.ts lines 831-860)
 			let autoExt = metadata.language_info?.file_extension;
@@ -51,7 +80,17 @@ export class JupytextService extends Disposable implements IJupytextService {
 			}
 
 			if (!autoExt) {
-				const language = metadata.kernelspec?.language || metadata.jupytext?.main_language;
+				let language = metadata.kernelspec?.language || metadata.jupytext?.main_language;
+				
+				// If no language from metadata and we have in-memory model, try to get from cell language
+				if (!language && metadataSource === 'in-memory-model' && fileUri) {
+					const notebookModel = this.notebookService.getNotebookTextModel(fileUri);
+					if (notebookModel?.cells && notebookModel.cells.length > 0) {
+						const cellLanguage = notebookModel.cells[0].language;
+						language = cellLanguage;
+					}
+				}
+				
 				if (language) {
 					for (const ext in SCRIPT_EXTENSIONS) {
 						if (sameLanguage(language, SCRIPT_EXTENSIONS[ext].language)) {
@@ -73,6 +112,7 @@ export class JupytextService extends Disposable implements IJupytextService {
 			
 			return { extension, format_name: 'percent' };
 		} catch (error) {
+			console.error('[JUPYTEXT_OPTIONS] Failed to parse notebook, defaulting to Python:', error);
 			// If parsing fails, default to Python
 			return { extension: '.py', format_name: 'percent' };
 		}

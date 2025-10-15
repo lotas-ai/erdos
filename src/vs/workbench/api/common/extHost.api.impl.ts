@@ -731,6 +731,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 
 				return extHostEditors.showTextDocument(document, columnOrOptions, preserveFocus);
 			},
+			createEditorViewZone(editor: vscode.TextEditor, zone: vscode.ViewZone): Promise<vscode.ViewZoneController> {
+				const controller = extHostEditorInsets.createNativeViewZone(editor, zone.afterLineNumber, zone.heightInPx);
+				return Promise.resolve(controller);
+			},
 			createTextEditorDecorationType(options: vscode.DecorationRenderOptions): vscode.TextEditorDecorationType {
 				return extHostEditors.createTextEditorDecorationType(extension, options);
 			},

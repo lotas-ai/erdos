@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IFileCommandHandler } from '../common/fileCommandHandler.js';
-
+import { URI } from '../../../../base/common/uri.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ICommonUtils } from '../../erdosAiUtils/common/commonUtils.js';
 import { ConversationMessage } from '../../erdosAi/common/conversationTypes.js';
@@ -18,7 +18,6 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { INotebookExecutionService } from '../../../contrib/notebook/common/notebookExecutionService.js';
 import { getNotebookEditorFromEditorPane } from '../../../contrib/notebook/browser/notebookBrowser.js';
-import { URI } from '../../../../base/common/uri.js';
 import { CellKind } from '../../../contrib/notebook/common/notebookCommon.js';
 import { reads } from '../../erdosAiIntegration/browser/jupytext/jupytext.js';
 import { getOutputText, TEXT_BASED_MIMETYPES } from '../../../contrib/notebook/browser/viewModel/cellOutputTextHelper.js';
@@ -291,7 +290,8 @@ export class FileCommandHandler extends Disposable implements IFileCommandHandle
 				// For execution, we skip the cell extraction logic and go straight to jupytext conversion
 				// This is equivalent to the "fallback" path in the display function
 				try {
-					const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
+					const fileUri = URI.file(filename);
+					const options = this.jupytextService.getNotebookJupytextOptions(fileContent, fileUri);
 					const convertedContent = this.jupytextService.convertNotebookToText(
 						fileContent, 
 						options
@@ -432,7 +432,8 @@ export class FileCommandHandler extends Disposable implements IFileCommandHandle
 			const originalNotebook = JSON.parse(fileContent);
 			
 			// Convert notebook to jupytext format to get the line mapping
-			const options = this.jupytextService.getNotebookJupytextOptions(fileContent);
+			const fileUri = URI.file(filename);
+			const options = this.jupytextService.getNotebookJupytextOptions(fileContent, fileUri);
 			const jupytextContent = this.jupytextService.convertNotebookToText(
 				fileContent,
 				options

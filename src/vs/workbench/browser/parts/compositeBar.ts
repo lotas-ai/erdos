@@ -524,9 +524,9 @@ export class CompositeBar extends Widget implements ICompositeBar {
 			return; // We have not been rendered yet so there is nothing to update.
 		}
 
-		// Force overflow mode for panels - prioritize Console and Terminal
+		// Force overflow mode for panels - prioritize Console, Terminal, and History
 		if (this.options.forceOverflow) {
-			const priorityCompositeIds = ['workbench.panel.erdosConsole', 'terminal'];
+			const priorityCompositeIds = ['workbench.panel.erdosConsole', 'terminal', 'workbench.panel.erdosHistory'];
 			let compositesToShow: string[] = [];
 			let size = 0;
 			const limit = this.options.orientation === ActionsOrientation.VERTICAL ? this.dimension.height : this.dimension.width;

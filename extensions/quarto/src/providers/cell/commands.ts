@@ -359,22 +359,17 @@ class RunCellsAboveCommand extends RunCommand implements Command {
 
       const executor = await this.cellExecutorForLanguage(language, editor.document, this.engine_);
       if (executor) {
-        // accumulate code
-        const code: string[] = [];
-        for (const block of blocks.filter(
-          isExecutableLanguageBlockOf(language)
-        )) {
-          code.push(codeWithoutOptionsFromBlock(block));
+        // Execute each block individually with its own chunk ID and range (matches Rao)
+        for (const blk of blocks.filter(isExecutableLanguageBlockOf(language))) {
+          const cellRange = new vscode.Range(
+            new vscode.Position(blk.range.start.line, 0),
+            new vscode.Position(blk.range.end.line, editor.document.lineAt(blk.range.end.line).text.length)
+          );
+          
+          const code = codeWithoutOptionsFromBlock(blk);
+          
+          await executeInteractive(executor, [code], editor.document, cellRange);
         }
-
-        // execute
-        const firstBlock = blocks[0];
-        const lastBlock = blocks[blocks.length - 1];
-        const combinedRange = new vscode.Range(
-          new vscode.Position(firstBlock.range.start.line, 0),
-          new vscode.Position(lastBlock.range.end.line, editor.document.lineAt(lastBlock.range.end.line).text.length)
-        );
-        await executeInteractive(executor, code, editor.document, combinedRange);
       }
     }
   }
@@ -403,7 +398,7 @@ class RunCellsBelowCommand extends RunCommand implements Command {
       ? languageNameFromBlock(block!)
       : undefined;
 
-    const blocks: string[] = [];
+    const blocks: Array<TokenMath | TokenCodeBlock> = [];
     for (const blk of tokens.filter((token?: Token) => blockIsExecutable(this.host_, token)) as Array<TokenMath | TokenCodeBlock>) {
       // skip if the cell is above or at the cursor
       if (line < blk.range.start.line) {
@@ -414,20 +409,24 @@ class RunCellsBelowCommand extends RunCommand implements Command {
         }
         // include blocks of this language
         if (blockLanguage === language) {
-          blocks.push(codeWithoutOptionsFromBlock(blk));
+          blocks.push(blk);
         }
       }
     }
-    // execute
+    // execute each block individually with its own chunk ID and range (matches Rao)
     if (language && blocks.length > 0) {
       const executor = await this.cellExecutorForLanguage(language, editor.document, this.engine_);
       if (executor) {
-        // Create range from current line to end of document for "below" commands
-        const combinedRange = new vscode.Range(
-          new vscode.Position(line, 0),
-          new vscode.Position(editor.document.lineCount - 1, editor.document.lineAt(editor.document.lineCount - 1).text.length)
-        );
-        await executeInteractive(executor, blocks, editor.document, combinedRange);
+        for (const blk of blocks) {
+          const cellRange = new vscode.Range(
+            new vscode.Position(blk.range.start.line, 0),
+            new vscode.Position(blk.range.end.line, editor.document.lineAt(blk.range.end.line).text.length)
+          );
+          
+          const code = codeWithoutOptionsFromBlock(blk);
+          
+          await executeInteractive(executor, [code], editor.document, cellRange);
+        }
       }
     }
   }
@@ -451,26 +450,34 @@ class RunAllCellsCommand extends RunCommand implements Command {
     _line: number,
     _block?: Token
   ) {
-    let language: string | undefined;
-    const blocks: string[] = [];
-    for (const block of tokens.filter((token?: Token) => blockIsExecutable(this.host_, token)) as Array<TokenMath | TokenCodeBlock>) {
-      const blockLanguage = languageNameFromBlock(block);
-      if (!language) {
-        language = blockLanguage;
+    // Find all executable blocks
+    const executableBlocks = tokens.filter((token?: Token) => blockIsExecutable(this.host_, token)) as Array<TokenMath | TokenCodeBlock>;
+    
+    // Group by language
+    const blocksByLanguage = new Map<string, Array<TokenMath | TokenCodeBlock>>();
+    for (const block of executableBlocks) {
+      const language = languageNameFromBlock(block);
+      if (!blocksByLanguage.has(language)) {
+        blocksByLanguage.set(language, []);
       }
-      if (blockLanguage === language) {
-        blocks.push(codeWithoutOptionsFromBlock(block));
-      }
+      blocksByLanguage.get(language)!.push(block);
     }
-    if (language && blocks.length > 0) {
+    
+    // Execute each language group
+    for (const [language, blocks] of blocksByLanguage) {
       const executor = await this.cellExecutorForLanguage(language, editor.document, this.engine_);
       if (executor) {
-        // Create range for entire document for "all cells" command
-        const combinedRange = new vscode.Range(
-          new vscode.Position(0, 0),
-          new vscode.Position(editor.document.lineCount - 1, editor.document.lineAt(editor.document.lineCount - 1).text.length)
-        );
-        await executeInteractive(executor, blocks, editor.document, combinedRange);
+        // Execute each block individually with its own chunk ID and range (matches Rao)
+        for (const block of blocks) {
+          const cellRange = new vscode.Range(
+            new vscode.Position(block.range.start.line, 0),
+            new vscode.Position(block.range.end.line, editor.document.lineAt(block.range.end.line).text.length)
+          );
+          
+          const code = codeWithoutOptionsFromBlock(block);
+          
+          await executeInteractive(executor, [code], editor.document, cellRange);
+        }
       }
     }
   }

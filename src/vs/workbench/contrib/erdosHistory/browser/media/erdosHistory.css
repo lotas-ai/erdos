@@ -1,0 +1,70 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (C) 2025 Lotas Inc. All rights reserved.
+ *  Licensed under the AGPL-3.0 License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.erdos-history-view {
+	height: 100%;
+}
+
+.history-grid {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.history-session-container {
+	height: 100%;
+	overflow: auto;
+}
+
+.history-entry {
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--vscode-panel-border);
+	position: relative;
+	transition: background-color 0.15s ease;
+}
+
+.history-entry:hover {
+	background-color: var(--vscode-list-hoverBackground);
+}
+
+.history-code {
+	font-family: var(--monaco-monospace-font);
+	white-space: pre-wrap;
+	word-break: break-word;
+	line-height: 1.5;
+	user-select: text;
+	-webkit-user-select: text;
+	-moz-user-select: text;
+	-ms-user-select: text;
+}
+
+.history-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.history-time {
+	font-size: 11px;
+	opacity: 0.6;
+	font-family: var(--monaco-monospace-font);
+}
+
+.history-action-button {
+	opacity: 0.7;
+	transition: opacity 0.15s ease;
+}
+
+.history-action-button:hover {
+	opacity: 1;
+}
+
+.history-empty {
+	padding: 20px;
+	text-align: center;
+	opacity: 0.6;
+	color: var(--vscode-descriptionForeground);
+}
+

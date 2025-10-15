@@ -458,7 +458,8 @@ export function fromRangeOrRangeWithMessage(ranges: vscode.Range[] | vscode.Deco
 				hoverMessage: Array.isArray(r.hoverMessage)
 					? MarkdownString.fromMany(r.hoverMessage)
 					: (r.hoverMessage ? MarkdownString.from(r.hoverMessage) : undefined),
-				renderOptions: <any> /* URI vs Uri */r.renderOptions
+				renderOptions: <any> /* URI vs Uri */r.renderOptions,
+				metadata: r.metadata
 			};
 		});
 	} else {

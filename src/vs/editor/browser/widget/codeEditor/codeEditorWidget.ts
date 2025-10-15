@@ -1386,6 +1386,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 			if (decorationOption.hoverMessage) {
 				opts.hoverMessage = decorationOption.hoverMessage;
 			}
+			if (decorationOption.metadata) {
+				opts.metadata = decorationOption.metadata;
+			}
 			newModelDecorations.push({ range: decorationOption.range, options: opts });
 		}
 

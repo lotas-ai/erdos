@@ -321,6 +321,15 @@ export class MainThreadTextEditors implements MainThreadTextEditorsShape {
 		return Promise.resolve(undefined);
 	}
 
+	$tryGetDecorations(id: string, key: string, range?: IRange): Promise<IDecorationOptions[]> {
+		key = `${this._instanceId}-${key}`;
+		const editor = this._editorLocator.getEditor(id);
+		if (!editor) {
+			return Promise.reject(illegalArgument(`TextEditor(${id})`));
+		}
+		return Promise.resolve(editor.getDecorations(key, range));
+	}
+
 	$tryRevealRange(id: string, range: IRange, revealType: TextEditorRevealType): Promise<void> {
 		const editor = this._editorLocator.getEditor(id);
 		if (!editor) {

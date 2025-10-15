@@ -25,6 +25,7 @@ import { ConsoleStartupScreen } from './consoleStartupScreen.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { NOTEBOOK_CONSOLE_MIRRORING_KEY } from '../../notebook/browser/notebookConfig.js';
 import { CodeAttributionSource } from '../../../services/languageRuntime/common/codeExecution.js';
+import { ICommandHistoryService } from '../../../services/erdosHistory/common/historyService.js';
 
 export interface IConsoleViewProps {
 	container: HTMLElement;
@@ -39,6 +40,7 @@ export interface IConsoleViewProps {
 	languageFeaturesService: ILanguageFeaturesService;
 	languageRuntimeService: ILanguageRuntimeService;
 	commandService: ICommandService;
+	historyService: ICommandHistoryService;
 }
 
 export class ConsoleView extends Disposable {
@@ -56,6 +58,10 @@ export class ConsoleView extends Disposable {
 
 	private _currentSession: ILanguageRuntimeSession | undefined;
 	private _lastExecutionSource: CodeAttributionSource | undefined;
+
+	public getMonacoInputForSession(sessionId: string): MonacoInput | undefined {
+		return this._sessionComponents.get(sessionId)?.monacoInput;
+	}
 	constructor(props: IConsoleViewProps) {
 		super();
 
@@ -174,6 +180,12 @@ export class ConsoleView extends Disposable {
 		const consoleMirroringEnabled = props.configurationService.getValue<boolean>(NOTEBOOK_CONSOLE_MIRRORING_KEY) ?? true;
 		if (!consoleMirroringEnabled && props.consoleService.isNotebookExecution(event.executionId)) {
 			return;
+		}
+
+		// Add to history service for all executions
+		const session = props.sessionManager.activeSessions.find(s => s.sessionId === event.sessionId);
+		if (session) {
+			props.historyService.addEntry(event.sessionId, session.runtimeMetadata.runtimeName, event.code);
 		}
 
 		// Skip displaying input for Interactive (console) executions since onWillExecute already handles it

@@ -633,6 +633,57 @@ declare module 'vscode' {
 	}
 
 	/**
+	 * Configuration for creating a view zone in an editor.
+	 */
+	export interface ViewZone {
+		/**
+		 * The line number after which this zone should appear.
+		 * Use 0 to place a view zone before the first line.
+		 */
+		afterLineNumber: number;
+
+		/**
+		 * The height in pixels of the view zone.
+		 */
+		heightInPx: number;
+	}
+
+	/**
+	 * Controller for a view zone that allows updating its properties.
+	 */
+	export interface ViewZoneController extends Disposable {
+		/**
+		 * Update the height of the view zone.
+		 * @param newHeight The new height in pixels
+		 */
+		updateHeight(newHeight: number): void;
+
+		/**
+		 * Append ANSI-styled text to the view zone. This uses the same rendering
+		 * as the console, with support for colors, styling, and links.
+		 * @param text The text to append (can include ANSI escape codes)
+		 */
+		appendText(text: string): void;
+
+		/**
+		 * Update the position (line number) of the view zone.
+		 * This is useful when the document changes and the view zone needs to move.
+		 * @param afterLineNumber The line number after which the view zone should appear (1-based)
+		 */
+		updatePosition(afterLineNumber: number): void;
+
+		/**
+		 * The current height of the view zone in pixels.
+		 */
+		readonly height: number;
+
+		/**
+		 * Event fired when the view zone is disposed (e.g., user clicks delete button).
+		 */
+		readonly onDidDispose: Event<void>;
+	}
+
+	/**
 	 * Rendering style of the cursor.
 	 */
 	export enum TextEditorCursorStyle {
@@ -1220,6 +1271,12 @@ declare module 'vscode' {
 		 * number of decoration specific options small, and use decoration types wherever possible.
 		 */
 		renderOptions?: DecorationInstanceRenderOptions;
+
+		/**
+		 * Custom metadata that can be attached to this decoration and retrieved later.
+		 * This can be used to store arbitrary data (like chunk IDs) that persists with the decoration.
+		 */
+		metadata?: any;
 	}
 
 	/**
@@ -1350,6 +1407,15 @@ declare module 'vscode' {
 		 * @param rangesOrOptions Either {@link Range ranges} or more detailed {@link DecorationOptions options}.
 		 */
 		setDecorations(decorationType: TextEditorDecorationType, rangesOrOptions: readonly Range[] | readonly DecorationOptions[]): void;
+
+		/**
+		 * Get all decorations for a decoration type in a range.
+		 *
+		 * @param decorationType A decoration type.
+		 * @param range The range to search for decorations. If not provided, returns all decorations of this type.
+		 * @return A thenable that resolves to an array of decoration options with their current ranges.
+		 */
+		getDecorationsInRange(decorationType: TextEditorDecorationType, range?: Range): Thenable<readonly DecorationOptions[]>;
 
 		/**
 		 * Scroll as indicated by `revealType` in order to reveal the given range.
@@ -11185,6 +11251,17 @@ declare module 'vscode' {
 		 * @returns A promise that resolves to an {@link TextEditor editor}.
 		 */
 		export function showTextDocument(uri: Uri, options?: TextDocumentShowOptions): Thenable<TextEditor>;
+
+		/**
+		 * Create a view zone in an editor with a native DOM element. This allows inline content
+		 * to be inserted directly into the editor using native DOM instead of webviews.
+		 * The view zone uses the same ANSI rendering as the console.
+		 *
+		 * @param editor The editor to add the view zone to
+		 * @param zone The view zone configuration
+		 * @returns A controller that can be used to append text and update the zone
+		 */
+		export function createEditorViewZone(editor: TextEditor, zone: ViewZone): Thenable<ViewZoneController>;
 
 		/**
 		 * Show the given {@link NotebookDocument} in a {@link NotebookEditor notebook editor}.

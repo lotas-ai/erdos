@@ -117,6 +117,12 @@ export interface IViewZoneChangeAccessor {
 	 * The editor will rescan the `afterLineNumber` and `afterColumn` properties of a view zone.
 	 */
 	layoutZone(id: string): void;
+	/**
+	 * Update a zone's properties (height, etc.) without recreating it.
+	 * @param id A unique identifier to the view zone, as returned by the `addZone` call.
+	 * @param newProps Partial properties to update
+	 */
+	updateZone(id: string, newProps: Partial<IViewZone>): void;
 }
 
 /**

@@ -38,6 +38,7 @@ import { IAccessibilityService } from '../../../../platform/accessibility/common
 import { IConsoleService } from '../../../services/erdosConsole/common/consoleService.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
+import { ICommandHistoryService } from '../../../services/erdosHistory/common/historyService.js';
 
 export class ConsoleViewPane extends ViewPane {
 	private readonly _erdosConsoleInstancesExistContextKey: IContextKey<boolean>;
@@ -64,7 +65,8 @@ export class ConsoleViewPane extends ViewPane {
 		@IAccessibilityService private readonly _accessibilityService: IAccessibilityService,
 		@IConsoleService private readonly _consoleService: IConsoleService,
 		@ILanguageRuntimeService private readonly _languageRuntimeService: ILanguageRuntimeService,
-		@ICommandService private readonly _commandService: ICommandService
+		@ICommandService private readonly _commandService: ICommandService,
+		@ICommandHistoryService private readonly _historyService: ICommandHistoryService
 	) {
 		super(options, keybindingService, contextMenuService, _configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
 		
@@ -106,13 +108,18 @@ export class ConsoleViewPane extends ViewPane {
 			workspaceContextService: this._workspaceContextService,
 			languageFeaturesService: this._languageFeaturesService,
 			languageRuntimeService: this._languageRuntimeService,
-			commandService: this._commandService
+			commandService: this._commandService,
+			historyService: this._historyService
 		}));
 	}
 
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
 		this._consoleView?.layout(width, height);
+	}
+
+	public getConsoleView(): ConsoleView | undefined {
+		return this._consoleView;
 	}
 
 	override createActionViewItem(action: IAction, options?: IDropdownMenuActionViewItemOptions): IActionViewItem | undefined {

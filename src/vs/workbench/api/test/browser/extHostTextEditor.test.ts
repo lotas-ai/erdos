@@ -87,6 +87,7 @@ suite('ExtHostTextEditorOptions', () => {
 			$trySetDecorationsFast: undefined!,
 			$tryRevealRange: undefined!,
 			$trySetSelections: undefined!,
+			$tryGetDecorations: () => Promise.resolve([]),
 			$tryApplyEdits: undefined!,
 			$tryInsertSnippet: undefined!,
 			$getDiffInformation: undefined!

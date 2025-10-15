@@ -1,903 +1,482 @@
 /*---------------------------------------------------------------------------------------------
- *  Copyright (c) 2025 Lotas Inc. All rights reserved.
+ * Copyright (c) 2025 Lotas Inc. All rights reserved.
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
 import { Disposable } from "../../core/dispose";
-import { handleANSIOutputToHTML } from './ansiToHtml';
-import { imageSize } from 'image-size';
 
-interface WebviewEditorInset {
-    readonly editor: vscode.TextEditor;
-    readonly line: number;
-    readonly height: number;
-    readonly webview: vscode.Webview;
-    readonly onDidDispose: vscode.Event<void>;
-    dispose(): void;
+// Runtime tracking for active chunks
+interface ChunkState {
+	currentExecutionId: string;              // Most recent execution ID
+	viewZone: vscode.ViewZoneController | null;  // The native DOM view zone
+	decoration: vscode.TextEditorDecorationType; // The decoration storing chunk ID
+	lastOutputLength: number;                // Track how much output has been appended
+	range: vscode.Range;                     // The cell range for this chunk
+	viewZoneHandle?: number;                 // Handle for updating position in main thread
 }
 
-interface OutputInset {
-    inset: WebviewEditorInset;
-    executionId: string;
-    cellRange: vscode.Range;
-    heightInLines: number;
-}
-
-// Extend vscode namespace with proposed API
-declare module 'vscode' {
-    namespace window {
-        export function createWebviewTextEditorInset(
-            editor: vscode.TextEditor, 
-            line: number, 
-            height: number, 
-            options?: vscode.WebviewOptions
-        ): WebviewEditorInset;
-    }
+// Per-document state that persists across editor switches
+interface DocumentState {
+	chunkStates: Map<string, ChunkState>;
+	executionToChunkId: Map<string, string>;
+	cellOutputs: Map<string, string[]>;
+	decorationToChunkId: Map<vscode.TextEditorDecorationType, string>;
 }
 
 export class QuartoInlineOutputManager extends Disposable {
-    private cellRangeTracker_ = new Map<string, vscode.Range>(); // executionId -> Range
-    private cellOutputs_ = new Map<string, string[]>(); // executionId -> output lines
-    private executionUris_ = new Map<string, string>(); // executionId -> document URI
-    private activeInsets_ = new Map<string, OutputInset>(); // executionId -> OutputInset
-    private cellPositionInsets_ = new Map<string, OutputInset>(); // "uri:startLine:endLine" -> OutputInset
+	// EXACTLY matches Rao's architecture:
+	// 1. Chunk ID stored in decoration metadata (like Rao's LineWidget.data)
+	// 2. Query decorations by position to find chunk ID (like Rao's getLineWidgetForRow)
+	// 3. Decorations automatically track position (like Rao's anchors)
+	// 4. View zones managed by chunk ID, reused across re-executions
+	
+	// Per-document state storage for persistence across file switches
+	private documentStates_ = new Map<string, DocumentState>();
+	private currentDocumentUri_?: string;
+	
+	// Current active state (points to entry in documentStates_)
+	private chunkStates_ = new Map<string, ChunkState>();   // chunkId -> runtime state
+	private executionToChunkId_ = new Map<string, string>(); // executionId -> chunkId
+	private cellOutputs_ = new Map<string, string[]>();      // executionId -> output lines
+	private disposingChunks_ = new Set<string>();            // Track chunks being intentionally disposed
+	private decorationToChunkId_ = new Map<vscode.TextEditorDecorationType, string>(); // decorationType -> chunkId
     private activeEditor_?: vscode.TextEditor;
+	private isSwitchingEditors_ = false;                     // Flag to prevent cleanup during editor switches
 
     constructor() {
         super();
 
-        this._register(vscode.window.onDidChangeActiveTextEditor(editor => {
+        this._register(vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+            this.isSwitchingEditors_ = true;
+            
+            if (this.currentDocumentUri_) {
+                await this.saveCurrentDocumentState();
+            }
+            
             this.activeEditor_ = editor;
-            this.recreateInsetsForEditor();
+            
+            if (!editor || (!editor.document.fileName.endsWith('.qmd') && !editor.document.fileName.endsWith('.rmd'))) {
+                this.clearCurrentState();
+                this.currentDocumentUri_ = undefined;
+            } else {
+                const newUri = editor.document.uri.toString();
+                this.currentDocumentUri_ = newUri;
+                await this.restoreDocumentState(newUri, editor);
+            }
+            
+            this.isSwitchingEditors_ = false;
         }));
 
-        // Listen for document changes to update inset positions
-        this._register(vscode.workspace.onDidChangeTextDocument(event => {
-            this.handleDocumentChange(event);
-        }));
-
-        this.activeEditor_ = vscode.window.activeTextEditor;
-    }
-
-    public override dispose() {
-        this.disposeAllInsets();
-        this.cellRangeTracker_.clear();
-        this.cellOutputs_.clear();
-        this.executionUris_.clear();
-        super.dispose();
-    }
-
-    public trackCellExecution(executionId: string, cellRange: vscode.Range): void {
-        this.cellRangeTracker_.set(executionId, cellRange);
-        // Initialize empty output array for this execution
-        this.cellOutputs_.set(executionId, []);
-        // Track which document this execution belongs to
-        if (this.activeEditor_) {
-            this.executionUris_.set(executionId, this.activeEditor_.document.uri.toString());
-        }
-    }
-
-    public isQuartoExecution(executionId: string): boolean {
-        return this.cellRangeTracker_.has(executionId);
-    }
-
-    private createPositionKey(uri: string, range: vscode.Range): string {
-        return `${uri}:${range.start.line}:${range.end.line}`;
-    }
-
-    private handleDocumentChange(event: vscode.TextDocumentChangeEvent): void {
-        if (!event.contentChanges.length) return;
-
-        const docUri = event.document.uri.toString();
-        
-        // Find all insets for this document and update their positions
-        const insetsToUpdate: Array<{oldKey: string, newKey: string, inset: OutputInset}> = [];
-        
-        for (const [positionKey, inset] of this.cellPositionInsets_) {
-            if (positionKey.startsWith(docUri + ':')) {
-                // Parse the position from the key
-                const parts = positionKey.split(':');
-                if (parts.length >= 3) {
-                    const startLine = parseInt(parts[parts.length - 2]);
-                    const endLine = parseInt(parts[parts.length - 1]);
-                    
-                    // Calculate new position after document changes
-                    let newStartLine = startLine;
-                    let newEndLine = endLine;
-                    
-                    for (const change of event.contentChanges) {
-                        const changeStartLine = change.range.start.line;
-                        const linesAdded = change.text.split('\n').length - 1;
-                        const linesRemoved = change.range.end.line - change.range.start.line;
-                        const netChange = linesAdded - linesRemoved;
-                        
-                        // Only update if the change is above our cell
-                        if (changeStartLine < startLine) {
-                            newStartLine += netChange;
-                            newEndLine += netChange;
-                        }
+        this._register(vscode.workspace.onDidChangeTextDocument(async (event) => {
+            if (this.activeEditor_ && event.document === this.activeEditor_.document) {
+                const fileName = event.document.fileName;
+                if (fileName.endsWith('.qmd') || fileName.endsWith('.rmd')) {
+                    if (event.contentChanges.length === 0) {
+                        return;
                     }
                     
-                    // If position changed, mark for update
-                    if (newStartLine !== startLine || newEndLine !== endLine) {
-                        const newRange = new vscode.Range(newStartLine, 0, newEndLine, 0);
-                        const newKey = this.createPositionKey(docUri, newRange);
-                        insetsToUpdate.push({oldKey: positionKey, newKey, inset});
+                    for (const [decorationType, chunkId] of this.decorationToChunkId_.entries()) {
+                        const decorations = await this.activeEditor_.getDecorationsInRange(decorationType);
+                        if (decorations.length > 0) {
+                            const newRange = decorations[0].range;
+                            const state = this.chunkStates_.get(chunkId);
+                            if (state) {
+                                const newAfterLine = newRange.end.line + 1;
+                                if (state.viewZone && state.range.end.line !== newRange.end.line) {
+                                    state.viewZone.updatePosition(newAfterLine);
+                                }
+                                state.range = newRange;
+                            }
+                        }
                     }
                 }
             }
-        }
-        
-        // Apply position updates
-        for (const update of insetsToUpdate) {
-            this.cellPositionInsets_.delete(update.oldKey);
-            this.cellPositionInsets_.set(update.newKey, update.inset);
+        }));
+
+        this.activeEditor_ = vscode.window.activeTextEditor;
+        if (this.activeEditor_ && (this.activeEditor_.document.fileName.endsWith('.qmd') || this.activeEditor_.document.fileName.endsWith('.rmd'))) {
+            this.currentDocumentUri_ = this.activeEditor_.document.uri.toString();
         }
     }
 
-    public handleRuntimeOutput(output: any): void {
-        const executionId = output.parentId;
-        const cellRange = this.cellRangeTracker_.get(executionId);
+    public override dispose() {
+        this.disposeAllChunks();
+        super.dispose();
+    }
+
+    // Generate random chunk ID (matches Rao: "c" + random 12 chars)
+    private generateChunkId(): string {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let id = 'c';
+        for (let i = 0; i < 12; i++) {
+            id += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return id;
+    }
+
+    // Save current document state (called when switching away from a document)
+    private async saveCurrentDocumentState(): Promise<void> {
+        if (!this.currentDocumentUri_) {
+            return;
+        }
+
+        for (const [chunkId, state] of this.chunkStates_) {
+            if (state.viewZone) {
+                this.disposingChunks_.add(chunkId);
+                state.viewZone.dispose();
+                state.viewZone = null;
+            }
+        }
+
+        this.documentStates_.set(this.currentDocumentUri_, {
+            chunkStates: new Map(this.chunkStates_),
+            executionToChunkId: new Map(this.executionToChunkId_),
+            cellOutputs: new Map(this.cellOutputs_),
+            decorationToChunkId: new Map(this.decorationToChunkId_)
+        });
+
+        this.disposingChunks_.clear();
+    }
+
+    // Clear current state without saving
+    private clearCurrentState(): void {
+        this.disposeAllChunks();
+        this.chunkStates_.clear();
+        this.executionToChunkId_.clear();
+        this.cellOutputs_.clear();
+        this.decorationToChunkId_.clear();
+    }
+
+    // Restore document state (called when switching to a document)
+    private async restoreDocumentState(uri: string, editor: vscode.TextEditor): Promise<void> {
+        const savedState = this.documentStates_.get(uri);
         
-        if (!cellRange || !this.activeEditor_) {
+        if (!savedState) {
+            this.chunkStates_.clear();
+            this.executionToChunkId_.clear();
+            this.cellOutputs_.clear();
+            this.decorationToChunkId_.clear();
+            return;
+        }
+
+        this.chunkStates_ = new Map(savedState.chunkStates);
+        this.executionToChunkId_ = new Map(savedState.executionToChunkId);
+        this.cellOutputs_ = new Map(savedState.cellOutputs);
+        this.decorationToChunkId_ = new Map(savedState.decorationToChunkId);
+
+        for (const [chunkId, state] of this.chunkStates_) {
+            editor.setDecorations(state.decoration, [{ range: state.range }]);
+
+            const outputLines = this.cellOutputs_.get(state.currentExecutionId);
+            if (outputLines && outputLines.length > 0) {
+                await this.createViewZoneForChunk(chunkId, state.currentExecutionId, state.range, outputLines);
+            }
+        }
+    }
+
+    // Query chunk ID at position by checking which decoration overlaps (matches Rao's getLineWidgetForRow)
+    private async getChunkIdAtRange(cellRange: vscode.Range): Promise<string | null> {
+        if (!this.activeEditor_) {
+            return null;
+        }
+
+        for (const [decorationType, chunkId] of this.decorationToChunkId_.entries()) {
+            const decorations = await this.activeEditor_.getDecorationsInRange(decorationType, cellRange);
+            if (decorations.length > 0) {
+                return chunkId;
+            }
+        }
+
+        return null;
+    }
+
+    // Track cell execution (matches Rao's chunk execution setup)
+    public async trackCellExecution(executionId: string, cellRange: vscode.Range): Promise<void> {
+        if (!this.activeEditor_) {
+            return;
+        }
+
+        let chunkId = await this.getChunkIdAtRange(cellRange);
+
+        if (chunkId) {
+            let state = this.chunkStates_.get(chunkId);
+            if (state) {
+                if (state.viewZone) {
+                    this.disposingChunks_.add(chunkId);
+                    state.viewZone.dispose();
+                }
+                state.viewZone = null;
+                state.currentExecutionId = executionId;
+                state.lastOutputLength = 0;
+                state.range = cellRange;
+            } else {
+                return;
+            }
+        } else {
+            chunkId = this.generateChunkId();
+            
+            const decorationType = vscode.window.createTextEditorDecorationType({
+                isWholeLine: false,
+            });
+            this._register(decorationType);
+            
+            this.activeEditor_.setDecorations(decorationType, [{ range: cellRange }]);
+            this.decorationToChunkId_.set(decorationType, chunkId);
+
+            const state: ChunkState = {
+                currentExecutionId: executionId,
+                viewZone: null,
+                decoration: decorationType,
+                lastOutputLength: 0,
+                range: cellRange
+            };
+            this.chunkStates_.set(chunkId, state);
+        }
+
+        this.executionToChunkId_.set(executionId, chunkId);
+        this.cellOutputs_.set(executionId, []);
+        this.disposingChunks_.delete(chunkId);
+    }
+
+    public isQuartoExecution(executionId: string): boolean {
+        return this.executionToChunkId_.has(executionId);
+    }
+
+    public handleRuntimeOutput(output: any): void {
+        const executionId = output.parent_id;
+        const chunkId = this.executionToChunkId_.get(executionId);
+        if (!chunkId || !this.chunkStates_.get(chunkId) || !this.activeEditor_) {
             return;
         }
 
         this.addOutputToExecution(executionId, output);
     }
 
-    private addOutputToExecution(executionId: string, output: any): void {
-        const outputLines = this.formatOutputData(output.data);
+    private async addOutputToExecution(executionId: string, output: any): Promise<void> {
+        const outputLines = this.formatOutputData(output);
         const existingOutput = this.cellOutputs_.get(executionId) || [];
         
-        // Append new output lines
         existingOutput.push(...outputLines);
         this.cellOutputs_.set(executionId, existingOutput);
 
-        // Update or create the webview inset
-        this.updateInsetForExecution(executionId);
+        await this.updateViewZoneForExecution(executionId);
+    }
+
+    private async updateViewZoneForExecution(executionId: string): Promise<void> {
+        if (!this.activeEditor_) {
+            return;
+        }
+
+        const chunkId = this.executionToChunkId_.get(executionId);
+        const state = chunkId ? this.chunkStates_.get(chunkId) : null;
+        const outputLines = this.cellOutputs_.get(executionId);
+
+        if (!chunkId || !state || !outputLines || outputLines.length === 0) {
+            return;
+        }
+
+        let cellRange: vscode.Range | null = null;
+        if (state.decoration) {
+            const decorations = await this.activeEditor_.getDecorationsInRange(state.decoration);
+            if (decorations.length > 0) {
+                cellRange = decorations[0].range;
+            }
+        }
+
+        if (!cellRange) {
+            return;
+        }
         
-        // Notify webview of content update for auto-scrolling
-        this.notifyWebviewContentUpdate(executionId);
+        // Check if we need to update the view zone
+        if (state.viewZone) {
+            // Append only new output (streaming)
+            const newOutputLines = outputLines.slice(state.lastOutputLength);
+            if (newOutputLines.length > 0) {
+                const newText = newOutputLines.join('');
+                state.viewZone.appendText(newText);
+                state.lastOutputLength = outputLines.length;
+            }
+
+            // Update height
+            const newHeight = this.calculateViewZoneHeight(outputLines);
+            state.viewZone.updateHeight(newHeight);
+            return;
+        }
+
+        // Create new view zone if needed
+        if (!state.viewZone) {
+            await this.createViewZoneForChunk(chunkId, executionId, cellRange, outputLines);
+        }
     }
 
-    private isHtmlContent(line: string): boolean {
-        const trimmed = line.trim();
-        return trimmed.startsWith('<') && (
-            trimmed.includes('<img') ||
-            trimmed.includes('<svg') ||
-            trimmed.includes('<div') ||
-            trimmed.includes('<span') ||
-            trimmed.includes('<p') ||
-            trimmed.includes('<table') ||
-            trimmed.includes('<script') ||
-            trimmed.includes('<style') ||
-            trimmed.includes('class="plotly-output"')
-        );
-    }
+    private async createViewZoneForChunk(chunkId: string, _executionId: string, cellRange: vscode.Range, outputLines: string[]): Promise<void> {
+        if (!this.activeEditor_) {
+            return;
+        }
 
-    private hasImages(outputLines: string[]): boolean {
-        return outputLines.some(line => {
-            const trimmed = line.trim();
-            return trimmed.includes('<img') || 
-                   (trimmed.startsWith('<svg') && trimmed.includes('</svg>')) ||
-                   trimmed.includes('class="plotly-output"');
-        });
-    }
+        const height = this.calculateViewZoneHeight(outputLines);
+        const afterLineNumber = cellRange.end.line + 1;
 
-    private extractImageDimensions(base64Data: string): {width: number, height: number} | null {
         try {
-            const buffer = Buffer.from(base64Data, 'base64');
-            const dimensions = imageSize(buffer);
-            
-            if (dimensions && dimensions.width && dimensions.height) {
-                return { width: dimensions.width, height: dimensions.height };
-            }
-            return null;
-        } catch (error) {
-            return null;
-        }
-    }
+            const controller = await vscode.window.createEditorViewZone(this.activeEditor_, {
+                afterLineNumber: afterLineNumber,
+                heightInPx: height
+            });
 
-    private calculateViewZoneHeightForImages(outputLines: string[]): number {
-        let maxImageHeight = 0;
-        
-        for (const line of outputLines) {
-            const imgMatch = line.match(/src="data:image\/[^;]+;base64,([^"]+)"/);
-            if (imgMatch) {
-                const dimensions = this.extractImageDimensions(imgMatch[1]);
-                if (dimensions) {
-                    // Convert pixel height to line height (assuming ~20px per line)
-                    const lineHeight = Math.ceil(dimensions.height / 20);
-                    maxImageHeight = Math.max(maxImageHeight, lineHeight);
-                }
+            const allText = outputLines.join('');
+            controller.appendText(allText);
+
+            const state = this.chunkStates_.get(chunkId);
+            if (state) {
+                state.viewZone = controller;
+                state.lastOutputLength = outputLines.length;
+                
+                controller.onDidDispose(() => {
+                    if (this.isSwitchingEditors_) {
+                        return;
+                    }
+                    
+                    if (this.disposingChunks_.has(chunkId)) {
+                        return;
+                    }
+                    
+                    this.cleanupChunk(chunkId);
+                });
+            } else {
+                controller.dispose();
             }
+        } catch (error) {
+            // Silently fail
         }
-        
-        return maxImageHeight > 0 ? Math.min(20, Math.max(8, maxImageHeight + 2)) : 0;
     }
 
     private calculateViewZoneHeight(outputLines: string[]): number {
-        if (this.hasImages(outputLines)) {
-            const imageHeight = this.calculateViewZoneHeightForImages(outputLines);
-            return imageHeight > 0 ? imageHeight : 15; // Default for images if extraction fails
-        } else {
-            // For text-only output
-            return Math.max(1, Math.min(outputLines.length + 1, 11)); // +1 for header, max 11 lines
+        const lineHeight = 18;
+        const padding = 20;
+        const maxLinesBeforeDynamic = 10;
+
+        // Check if output contains an image - give it extra height
+        const hasImage = outputLines.some(line => line.startsWith('IMAGE:'));
+        
+        if (hasImage) {
+            return 400;
         }
+
+        return outputLines.length > maxLinesBeforeDynamic 
+            ? maxLinesBeforeDynamic * lineHeight + padding
+            : outputLines.length * lineHeight + padding;
     }
 
-    private formatOutputData(data: any): string[] {
+    private formatOutputData(output: any): string[] {
+        if (!output) {
+            return [];
+        }
+
         const lines: string[] = [];
 
-        if (!data) {
+        // Check if this is an error message (has type: 'error')
+        if (output.type === 'error') {
+            // Format error exactly like console does: name + message, then traceback
+            const errorName = output.name || '';
+            const errorMessage = output.message || '';
+            const traceback = output.traceback || [];
+            
+            // Create the detailed message with ANSI red color for the name (same as console)
+            const detailedMessage = !errorName ? errorMessage : `\x1b[31m${errorName}\x1b[0m: ${errorMessage}`;
+            lines.push(detailedMessage);
+            
+            // Add traceback as a single string (same as console)
+            if (traceback.length > 0) {
+                lines.push(traceback.join('\n'));
+            }
+            
             return lines;
         }
 
-        // Define the preferred order for output types
-        const outputOrder = [
-            'text/html',
-            'image/png',
-            'image/jpeg', 
-            'image/jpg',
-            'image/svg+xml',
-            'image/gif',
-            'image/webp',
-            'application/vnd.plotly.v1+json',
-            'text/plain',
-            'application/json'
-        ];
-
-        // Process each output type in order if it exists
-        for (const mimeType of outputOrder) {
-            if (data[mimeType]) {
-
-                switch (mimeType) {
-                    case 'image/png':
-                        const pngData = Array.isArray(data['image/png']) ? data['image/png'].join('') : data['image/png'];
-                        lines.push(`<img src="data:image/png;base64,${pngData}" style="max-width: 100%; height: auto;" alt="Plot output" />`);
-                        break;
-                    case 'image/jpeg':
-                        const jpegData = Array.isArray(data['image/jpeg']) ? data['image/jpeg'].join('') : data['image/jpeg'];
-                        lines.push(`<img src="data:image/jpeg;base64,${jpegData}" style="max-width: 100%; height: auto;" alt="Plot output" />`);
-                        break;
-                    case 'image/jpg':
-                        const jpgData = Array.isArray(data['image/jpg']) ? data['image/jpg'].join('') : data['image/jpg'];
-                        lines.push(`<img src="data:image/jpeg;base64,${jpgData}" style="max-width: 100%; height: auto;" alt="Plot output" />`);
-                        break;
-                    case 'image/svg+xml':
-                        const svgData = Array.isArray(data['image/svg+xml']) ? data['image/svg+xml'].join('') : data['image/svg+xml'];
-                        if (svgData.trim().startsWith('<svg')) {
-                            lines.push(svgData);
-                        } else {
-                            lines.push(`<img src="data:image/svg+xml;base64,${svgData}" style="max-width: 100%; height: auto;" alt="Plot output" />`);
-                        }
-                        break;
-                    case 'image/gif':
-                        const gifData = Array.isArray(data['image/gif']) ? data['image/gif'].join('') : data['image/gif'];
-                        lines.push(`<img src="data:image/gif;base64,${gifData}" style="max-width: 100%; height: auto;" alt="Plot output" />`);
-                        break;
-                    case 'image/webp':
-                        const webpData = Array.isArray(data['image/webp']) ? data['image/webp'].join('') : data['image/webp'];
-                        lines.push(`<img src="data:image/webp;base64,${webpData}" style="max-width: 100%; height: auto;" alt="Plot output" />`);
-                        break;
-                    case 'application/vnd.plotly.v1+json':
-                        const plotlyData = data['application/vnd.plotly.v1+json'];
-                        lines.push(`<div class="plotly-output" data-plotly='${JSON.stringify(plotlyData)}'>Interactive plot (Plotly data available)</div>`);
-                        break;
-                    case 'text/html':
-                        const htmlContent = Array.isArray(data['text/html']) ? data['text/html'].join('') : data['text/html'];
-                        lines.push(htmlContent);
-                        break;
-                    case 'text/plain':
-                        const textContent = Array.isArray(data['text/plain']) ? data['text/plain'].join('\n') : data['text/plain'];
-                        lines.push(...textContent.split('\n'));
-                        break;
-                    case 'application/json':
-                        lines.push(JSON.stringify(data['application/json'], null, 2));
-                        break;
-                }
-            }
+        // For regular outputs, check the data field
+        const data = output.data;
+        if (!data) {
+            return [];
         }
 
-        // Handle any remaining output types not in our predefined list
-        for (const [mimeType, content] of Object.entries(data)) {
-            if (!outputOrder.includes(mimeType)) {
-                lines.push(`[${mimeType}] ${JSON.stringify(content, null, 2)}`);
-            }
+        // For native DOM view zones, we output raw ANSI text (no HTML)
+        // The view zone will render it using handleANSIOutput (same as console)
+        if (data['text/plain']) {
+            const textData = Array.isArray(data['text/plain']) ? data['text/plain'].join('') : data['text/plain'];
+            lines.push(textData); // Raw ANSI text - will be rendered by handleANSIOutput
+        } else if (data['image/png']) {
+            const base64Image = Array.isArray(data['image/png']) ? data['image/png'].join('') : data['image/png'];
+            lines.push(`IMAGE:data:image/png;base64,${base64Image}`);
+        } else if (data['image/jpeg']) {
+            const base64Image = Array.isArray(data['image/jpeg']) ? data['image/jpeg'].join('') : data['image/jpeg'];
+            lines.push(`IMAGE:data:image/jpeg;base64,${base64Image}`);
+        } else if (data['text/html']) {
+            // HTML output - for now just show a placeholder
+            lines.push('[HTML output not yet supported in native view zones]\n');
+        } else if (data['application/json']) {
+            const jsonData = typeof data['application/json'] === 'string' 
+                ? data['application/json'] 
+                : JSON.stringify(data['application/json'], null, 2);
+            lines.push(jsonData + '\n');
+        } else {
+            const textData = Array.isArray(data) ? data.join('') : String(data);
+            lines.push(textData);
         }
 
-        const filteredLines = lines.filter(line => line.trim().length > 0);
-        return filteredLines;
+        return lines;
     }
 
-    private updateInsetForExecution(executionId: string): void {
-        if (!this.activeEditor_) {
+    private async cleanupChunk(chunkId: string): Promise<void> {
+        const state = this.chunkStates_.get(chunkId);
+        if (!state) {
             return;
         }
 
-        const cellRange = this.cellRangeTracker_.get(executionId);
-        const outputLines = this.cellOutputs_.get(executionId);
-        const executionUri = this.executionUris_.get(executionId);
+        this.chunkStates_.delete(chunkId);
 
-        if (!cellRange || !outputLines || outputLines.length === 0 || !executionUri) {
-            return;
-        }
-
-        // Create position key for this cell
-        const positionKey = this.createPositionKey(executionUri, cellRange);
-        
-        const maxLinesBeforeDynamic = 10;
-        const currentLines = outputLines.length;
-        
-        // Check if there's already an inset at this position
-        const existingPositionInset = this.cellPositionInsets_.get(positionKey);
-        if (existingPositionInset) {
-            const oldExecutionId = existingPositionInset.executionId;
-            
-            if (oldExecutionId === executionId) {
-                // Same execution - decide whether to recreate or update
-                const currentHeight = existingPositionInset.heightInLines;
-                const newHeight = this.calculateViewZoneHeight(this.cellOutputs_.get(executionId) || []);
-                
-                if (currentLines <= maxLinesBeforeDynamic && newHeight !== currentHeight) {
-                    // Still growing and height changed - recreate with new height
-                    existingPositionInset.inset.dispose();
-                    this.activeInsets_.delete(executionId);
-                    this.cellPositionInsets_.delete(positionKey);
-                } else if (currentLines > maxLinesBeforeDynamic) {
-                    // Over max lines - use dynamic updates with scrolling
-                    // Content will be updated by notifyWebviewContentUpdate call after this method
-                    return;
-                } else {
-                    // Same height, under max lines - recreate to ensure scroll to bottom
-                    existingPositionInset.inset.dispose();
-                    this.activeInsets_.delete(executionId);
-                    this.cellPositionInsets_.delete(positionKey);
-                }
-            } else {
-                // Different execution - dispose the old one
-                existingPositionInset.inset.dispose();
-                this.cellRangeTracker_.delete(oldExecutionId);
-                this.cellOutputs_.delete(oldExecutionId);
-                this.executionUris_.delete(oldExecutionId);
-                this.activeInsets_.delete(oldExecutionId);
-                this.cellPositionInsets_.delete(positionKey);
-                
+        for (const [executionId, mappedChunkId] of this.executionToChunkId_.entries()) {
+            if (mappedChunkId === chunkId) {
+                this.executionToChunkId_.delete(executionId);
+                this.cellOutputs_.delete(executionId);
             }
         }
 
-        // Create new webview inset for current execution
-        this.createInsetForExecution(executionId, cellRange, outputLines);
-        
-        // Force scroll to bottom for new/recreated webviews
-        setTimeout(() => {
-            const outputInset = this.activeInsets_.get(executionId);
-            if (outputInset) {
-                outputInset.inset.webview.postMessage({ type: 'forceScroll' });
-            }
-        }, 50);
-    }
-
-    private createWebviewInset(cellRange: vscode.Range, outputLines: string[], executionId: string, customHeight?: number, isCollapsed?: boolean): WebviewEditorInset | null {
-        if (!this.activeEditor_) return null;
-
-        // Show all content - let CSS handle scrolling
-        const displayLines = outputLines;
-
-        // Use custom height if provided, otherwise calculate based on content and whether it contains images
-        const heightInLines = customHeight !== undefined ? 
-            Math.max(1, customHeight) : 
-            this.calculateViewZoneHeight(displayLines);
-
-        // Generate HTML content for the webview
-        const htmlContent = this.generateOutputHtml(displayLines, executionId, isCollapsed || false);
-
-        // Position the inset after the cell's last line
-        const insetLine = cellRange.end.line;
-
-        try {
-            const inset = vscode.window.createWebviewTextEditorInset(
-                this.activeEditor_,
-                insetLine,
-                heightInLines,
-                {
-                    enableScripts: true,
-                    enableCommandUris: true,
-                    localResourceRoots: [],
-                    enableForms: false
-                }
-            );
-
-            inset.webview.html = htmlContent;
-
-            // Handle messages from the webview
-            this._register(inset.webview.onDidReceiveMessage(message => {
-                this.handleWebviewMessage(message, executionId);
-            }));
-
-            // Set up disposal handling
-            this._register(inset.onDidDispose(() => {
-                this.activeInsets_.delete(executionId);
-            }));
-
-            return inset;
-        } catch (error) {
-            console.error(`[QuartoOutputManager] Failed to create webview inset:`, error);
-            return null;
+        if (state.decoration) {
+            this.decorationToChunkId_.delete(state.decoration);
+            state.decoration.dispose();
         }
     }
 
-    private generateOutputHtml(outputLines: string[], executionId: string, isCollapsed: boolean = false): string {
-        // Calculate the proper expanded height for the resize message
-        const expandedHeight = this.calculateViewZoneHeight(outputLines);
-        // Process each line - handle HTML content vs plain text
-        const processedLines = outputLines.map(line => {
-            // Check if line contains HTML (images, rich content)
-            if (this.isHtmlContent(line)) {
-                // Return HTML content as-is
-                return line;
-            } else {
-                // Process as plain text with ANSI handling
-                return handleANSIOutputToHTML(line);
+    private disposeAllChunks(): void {
+        for (const [_chunkId, state] of this.chunkStates_) {
+            if (state.viewZone) {
+                state.viewZone.dispose();
             }
-        });
-
-        // Set initial state based on collapse parameter
-        const initialState = isCollapsed ? 'collapsed' : 'expanded';
-        const chevronRotation = isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)';
-
-        return `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        /* SVG icons for controls */
-        .codicon {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-        }
-        .codicon.chevron {
-            width: 24px;
-        }
-        .codicon svg {
-            width: 100%;
-            height: 100%;
-            fill: currentColor;
-            transition: transform 0.2s ease-in-out;
-        }
-        
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            max-height: 100%;
-            overflow: hidden;
-        }
-        body {
-            font-family: var(--vscode-editor-font-family);
-            font-size: var(--vscode-editor-font-size);
-            line-height: var(--vscode-editor-line-height);
-            color: var(--vscode-editor-foreground);
-            background-color: var(--vscode-editor-background);
-            border: 1px solid var(--vscode-panel-border);
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-        }
-        .header {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 1px 8px;
-            background-color: var(--vscode-editor-background);
-            gap: 8px;
-            height: calc(var(--vscode-editor-line-height) * 0.5);
-            padding-right: 12px;
-            flex-shrink: 0;
-        }
-        .control-button {
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            padding: 1px;
-            border-radius: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 16px;
-            height: 12px;
-            font-size: 10px;
-        }
-        .control-button:hover {
-            background-color: var(--vscode-toolbar-hoverBackground);
-        }
-        .output-line {
-            white-space: pre;
-            margin: 0;
-            padding: 2px 4px;
-        }
-        .output-html {
-            margin: 4px 0;
-            padding: 2px 4px;
-        }
-        .output-html img {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 4px auto;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .output-html svg {
-            max-width: 100%;
-            height: auto;
-            display: block;
-            margin: 4px auto;
-        }
-        .plotly-output {
-            padding: 8px;
-            background-color: var(--vscode-editor-background);
-            border: 1px solid var(--vscode-panel-border);
-            border-radius: 4px;
-            margin: 4px 0;
-            font-style: italic;
-            color: var(--vscode-descriptionForeground);
-        }
-        /* Dark theme adjustments */
-        @media (prefers-color-scheme: dark) {
-            .output-html img {
-                box-shadow: 0 1px 3px rgba(255, 255, 255, 0.1);
+            if (state.decoration) {
+                state.decoration.dispose();
             }
         }
-        .output-container {
-            font-family: var(--vscode-editor-font-family);
-            width: 100%;
-            min-width: fit-content;
-        }
-        .output-content {
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: auto;
-            min-height: 0;
-            height: 0; /* Force height to be constrained by flex container */
-        }
-        .output-content.collapsed {
-            display: none;
-        }
-        .output-content.expanded {
-            display: block;
-        }
-        /* ANSI formatting styles */
-        .code-bold { font-weight: bold; }
-        .code-dim { opacity: 0.6; }
-        .code-italic { font-style: italic; }
-        .code-underline { text-decoration: underline; }
-        .code-double-underline { text-decoration: underline double; }
-        .code-blink { animation: blink 1s step-start infinite; }
-        .code-rapid-blink { animation: blink 0.5s step-start infinite; }
-        .code-hidden { visibility: hidden; }
-        .code-strike-through { text-decoration: line-through; }
-        .code-overline { text-decoration: overline; }
-        .code-superscript { vertical-align: super; font-size: smaller; }
-        .code-subscript { vertical-align: sub; font-size: smaller; }
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-        /* ANSI color variables - these will be set by VS Code theme */
-        :root {
-            --vscode-debug-ansi-black: #000000;
-            --vscode-debug-ansi-red: #cd3131;
-            --vscode-debug-ansi-green: #0dbc79;
-            --vscode-debug-ansi-yellow: #e5e510;
-            --vscode-debug-ansi-blue: #2472c8;
-            --vscode-debug-ansi-magenta: #bc3fbc;
-            --vscode-debug-ansi-cyan: #11a8cd;
-            --vscode-debug-ansi-white: #e5e5e5;
-            --vscode-debug-ansi-brightBlack: #666666;
-            --vscode-debug-ansi-brightRed: #f14c4c;
-            --vscode-debug-ansi-brightGreen: #23d18b;
-            --vscode-debug-ansi-brightYellow: #f5f543;
-            --vscode-debug-ansi-brightBlue: #3b8eea;
-            --vscode-debug-ansi-brightMagenta: #d670d6;
-            --vscode-debug-ansi-brightCyan: #29b8db;
-            --vscode-debug-ansi-brightWhite: #e5e5e5;
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <button class="control-button" id="collapse-btn" title="Collapse/Expand Output">
-            <svg class="codicon chevron" id="chevron-icon" viewBox="0 0 16 16" fill="currentColor" style="transform: ${chevronRotation}">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M7.976 10.072l4.357-4.357.62.618L8.284 11h-.618L3 6.333l.619-.618 4.357 4.357z"/>
-            </svg>
-        </button>
-        <button class="control-button" id="close-btn" title="Close Output">
-            <svg class="codicon" viewBox="0 0 16 16" fill="currentColor">
-                <path fill-rule="evenodd" clip-rule="evenodd" d="M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.708L8 8.707z"/>
-            </svg>
-        </button>
-    </div>
-    <div class="output-content ${initialState}" id="output-content">
-        <div class="output-container">
-            ${processedLines.map(line => {
-                const isHtml = this.isHtmlContent(line);
-                return isHtml ? `<div class="output-html">${line}</div>` : `<div class="output-line">${line}</div>`;
-            }).join('')}
-        </div>
-    </div>
-    
-    <script>
-        // Get VS Code API for proper webview communication
-        const vscode = acquireVsCodeApi();
-        
-        const collapseBtn = document.getElementById('collapse-btn');
-        const closeBtn = document.getElementById('close-btn');
-        const outputContent = document.getElementById('output-content');
-        const chevronIcon = document.getElementById('chevron-icon');
-        
-        collapseBtn.addEventListener('click', () => {
-            if (outputContent.classList.contains('expanded')) {
-                // Collapse
-                vscode.postMessage({ 
-                    type: 'resize', 
-                    executionId: '${executionId}',
-                    height: 1 
-                });
-                
-                outputContent.classList.remove('expanded');
-                outputContent.classList.add('collapsed');
-                chevronIcon.style.transform = 'rotate(0deg)'; // Down when collapsed
-            } else {
-                // Expand
-                vscode.postMessage({ 
-                    type: 'resize', 
-                    executionId: '${executionId}',
-                    height: ${expandedHeight} 
-                });
-                
-                outputContent.classList.remove('collapsed');
-                outputContent.classList.add('expanded');
-                chevronIcon.style.transform = 'rotate(180deg)'; // Up when expanded
-            }
-        });
-        
-        closeBtn.addEventListener('click', () => {
-            vscode.postMessage({ 
-                type: 'close', 
-                executionId: '${executionId}' 
-            });
-        });
-
-        // Auto-scroll functionality
-        function scrollToBottom() {
-            if (!outputContent.classList.contains('expanded')) {
-                return;
-            }
-            outputContent.scrollTop = outputContent.scrollHeight;
-        }
-
-
-        // Listen for content updates from the extension
-        window.addEventListener('message', (event) => {
-            if (event.data.type === 'updateContent') {
-                // Update the output container with new content
-                const outputContainer = document.querySelector('.output-container');
-                if (outputContainer) {
-                    outputContainer.innerHTML = event.data.content;
-                    setTimeout(scrollToBottom, 10);
-                }
-            } else if (event.data.type === 'forceScroll') {
-                setTimeout(scrollToBottom, 10);
-            }
-        });
-
-        // Initial scroll to bottom when expanded
-        if (outputContent.classList.contains('expanded')) {
-            setTimeout(scrollToBottom, 50);
-        }
-    </script>
-</body>
-</html>`;
-    }
-
-    private handleWebviewMessage(message: any, executionId: string): void {
-        switch (message.type) {
-            case 'resize':
-                this.handleResizeMessage(message, executionId);
-                break;
-            case 'close':
-                this.handleCloseMessage(executionId);
-                break;
-        }
-    }
-
-    private notifyWebviewContentUpdate(executionId: string): void {
-        const outputInset = this.activeInsets_.get(executionId);
-        const outputLines = this.cellOutputs_.get(executionId);
-        
-        if (outputInset && outputLines) {
-            // Process lines - handle HTML content vs plain text
-            const processedLines = outputLines.map(line => {
-                // Check if line contains HTML (images, rich content)
-                if (this.isHtmlContent(line)) {
-                    // Return HTML content as-is
-                    return line;
-                } else {
-                    // Process as plain text with ANSI handling
-                    return handleANSIOutputToHTML(line);
-                }
-            });
-            
-            const contentHtml = processedLines.map(line => {
-                const isHtml = this.isHtmlContent(line);
-                return isHtml ? `<div class="output-html">${line}</div>` : `<div class="output-line">${line}</div>`;
-            }).join('');
-            
-            outputInset.inset.webview.postMessage({
-                type: 'updateContent',
-                content: contentHtml
-            });
-        }
-    }
-
-    private handleResizeMessage(message: any, executionId: string): void {
-        
-        const outputInset = this.activeInsets_.get(executionId);
-        if (!outputInset || !this.activeEditor_) {
-            console.error(`[QuartoOutputManager] No active inset (${!!outputInset}) or editor (${!!this.activeEditor_}) for execution ${executionId}`);
-            return;
-        }
-
-        const newHeight = message.height || 1;
-
-        // Get ALL the data we need BEFORE disposing anything
-        const cellRange = this.cellRangeTracker_.get(executionId);
-        const executionUri = this.executionUris_.get(executionId);
-        const outputLines = this.cellOutputs_.get(executionId) || [];
-        
-        if (!cellRange) {
-            console.error(`[QuartoOutputManager] No cell range found for execution ${executionId}`);
-            return;
-        }
-
-        if (!executionUri) {
-            console.error(`[QuartoOutputManager] No execution URI found for execution ${executionId}`);
-            return;
-        }
-
-        const positionKey = this.createPositionKey(executionUri, cellRange);
-
-        // NOW dispose the old inset
-        outputInset.inset.dispose();
-        this.activeInsets_.delete(executionId);
-        this.cellPositionInsets_.delete(positionKey);
-
-        // Create new inset with the saved data
-        const isCollapsed = newHeight === 1;
-        const newInset = this.createWebviewInset(cellRange, outputLines, executionId, newHeight, isCollapsed);
-        if (newInset) {
-            const newOutputInset: OutputInset = {
-                inset: newInset,
-                executionId,
-                cellRange,
-                heightInLines: newHeight
-            };
-            
-            this.activeInsets_.set(executionId, newOutputInset);
-            this.cellPositionInsets_.set(positionKey, newOutputInset);
-            
-            // If expanding, force scroll to bottom to show content
-            if (newHeight > 1) {
-                setTimeout(() => {
-                    newInset.webview.postMessage({ type: 'forceScroll' });
-                }, 50); // Small delay to ensure webview is ready
-            }
-        }
-    }
-
-    private handleCloseMessage(executionId: string): void {
-        this.clearExecutionOutput(executionId);
-    }
-
-    private recreateInsetsForEditor(): void {
-        if (!this.activeEditor_) {
-            return;
-        }
-
-        // Clear existing insets (they're tied to the previous editor)
-        for (const [_, outputInset] of this.activeInsets_) {
-            outputInset.inset.dispose();
-        }
-        this.activeInsets_.clear();
-
-        // Only recreate insets that are currently in the position-based map
-        // This ensures we only recreate the most recent execution at each position
-        const currentEditorUri = this.activeEditor_.document.uri.toString();
-        
-        for (const [positionKey, outputInset] of this.cellPositionInsets_) {
-            // Check if this position belongs to the current editor
-            if (positionKey.startsWith(currentEditorUri + ':')) {
-                const executionId = outputInset.executionId;
-                const cellRange = outputInset.cellRange;
-                const outputLines = this.cellOutputs_.get(executionId) || [];
-                
-                this.createInsetForExecution(executionId, cellRange, outputLines);
-            }
-        }
-    }
-
-    private createInsetForExecution(executionId: string, cellRange: vscode.Range, outputLines: string[]): void {
-        if (!this.activeEditor_) return;
-
-        try {
-            const inset = this.createWebviewInset(cellRange, outputLines, executionId);
-            if (inset) {
-                const outputInset: OutputInset = {
-                    inset,
-                    executionId,
-                    cellRange,
-                    heightInLines: this.calculateViewZoneHeight(outputLines)
-                };
-                
-                // Store in both maps for compatibility and position tracking
-                this.activeInsets_.set(executionId, outputInset);
-                
-                const executionUri = this.executionUris_.get(executionId);
-                if (executionUri) {
-                    const positionKey = this.createPositionKey(executionUri, cellRange);
-                    this.cellPositionInsets_.set(positionKey, outputInset);
-                }
-            }
-        } catch (error) {
-            console.error(`[QuartoOutputManager] Failed to create inset for execution ${executionId}:`, error);
-        }
-    }
-
-    private disposeAllInsets(): void {
-        for (const [_, outputInset] of this.activeInsets_) {
-            outputInset.inset.dispose();
-        }
-        this.activeInsets_.clear();
-        this.cellPositionInsets_.clear();
-    }
-
-    public clearExecutionOutput(executionId: string): void {        
-        // Get position key before removing from tracking
-        const cellRange = this.cellRangeTracker_.get(executionId);
-        const executionUri = this.executionUris_.get(executionId);
-        
-        // Remove from tracking
-        this.cellOutputs_.delete(executionId);
-        this.cellRangeTracker_.delete(executionId);
-        this.executionUris_.delete(executionId);
-
-        // Dispose inset
-        const outputInset = this.activeInsets_.get(executionId);
-        if (outputInset) {
-            outputInset.inset.dispose();
-            this.activeInsets_.delete(executionId);
-            
-            // Also remove from position-based tracking
-            if (cellRange && executionUri) {
-                const positionKey = this.createPositionKey(executionUri, cellRange);
-                this.cellPositionInsets_.delete(positionKey);
-            }
-        }
-        
-    }
-
-    public clearAllOutputs(): void {
-        this.disposeAllInsets();
+        this.chunkStates_.clear();
+        this.executionToChunkId_.clear();
         this.cellOutputs_.clear();
-        this.cellRangeTracker_.clear();
-        this.executionUris_.clear();
+        this.decorationToChunkId_.clear();
     }
 
+    public clearExecutionOutput(executionId: string): void {
+        const chunkId = this.executionToChunkId_.get(executionId);
+        if (!chunkId) {
+            return;
+        }
+
+        const state = this.chunkStates_.get(chunkId);
+        if (state?.viewZone) {
+            state.viewZone.dispose();
+            state.viewZone = null;
+            this.cellOutputs_.delete(executionId);
+            this.executionToChunkId_.delete(executionId);
+        }
+    }
 }
 
+// Export singleton instance for use across extension
 export const quartoInlineOutputManager = new QuartoInlineOutputManager();

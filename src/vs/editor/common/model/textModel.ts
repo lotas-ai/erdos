@@ -2430,6 +2430,7 @@ export class ModelDecorationOptions implements model.IModelDecorationOptions {
 	readonly hideInStringTokens: boolean | null;
 	readonly affectsFont: boolean | null;
 	readonly textDirection?: model.TextDirection | null | undefined;
+	readonly metadata?: any;
 
 	private constructor(options: model.IModelDecorationOptions) {
 		this.description = options.description;
@@ -2468,6 +2469,7 @@ export class ModelDecorationOptions implements model.IModelDecorationOptions {
 		this.hideInCommentTokens = options.hideInCommentTokens ?? false;
 		this.hideInStringTokens = options.hideInStringTokens ?? false;
 		this.textDirection = options.textDirection ?? null;
+		this.metadata = options.metadata;
 	}
 }
 ModelDecorationOptions.EMPTY = ModelDecorationOptions.register({ description: 'empty' });

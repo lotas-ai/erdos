@@ -280,8 +280,8 @@ export class InfrastructureRegistry extends Disposable implements IInfrastructur
                     this.jupytextService.convertNotebookToText(notebookContent, options),
                 convertTextToNotebook: (textContent: string, options: { extension: string; format_name: string }) => 
                     this.jupytextService.convertTextToNotebook(textContent, options),
-                getNotebookJupytextOptions: (notebookContent: string) => 
-                    this.jupytextService.getNotebookJupytextOptions(notebookContent)
+                getNotebookJupytextOptions: (notebookContent: string, fileUri?: any) => 
+                    this.jupytextService.getNotebookJupytextOptions(notebookContent, fileUri)
             },
 
             fileResolverService: {

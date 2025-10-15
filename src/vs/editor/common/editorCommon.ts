@@ -733,6 +733,7 @@ export interface IDecorationOptions {
 	range: IRange;
 	hoverMessage?: IMarkdownString | IMarkdownString[];
 	renderOptions?: IDecorationInstanceRenderOptions;
+	metadata?: any;
 }
 
 /**
