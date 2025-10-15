@@ -29,11 +29,14 @@ import { ITextModelService } from '../../../../editor/common/services/resolverSe
 import { IErdosAiMarkdownRenderer } from '../../../services/erdosAiUtils/common/erdosAiMarkdownRenderer.js';
 import { ICommonUtils } from '../../../services/erdosAiUtils/common/commonUtils.js';
 import { IErdosAiSettingsService } from '../../../services/erdosAiSettings/common/settingsService.js';
+import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 
 /**
  * ErdosAi view pane container for the React UI component
  */
 export class ErdosAiViewPane extends ViewPane implements IReactComponentContainer {
+	private static readonly SETTINGS_AUTO_OPEN_STORAGE_KEY = 'erdos.ai.settingsAutoOpened';
+
 	private _onSizeChangedEmitter = this._register(new Emitter<ISize>());
 
 	private _onVisibilityChangedEmitter = this._register(new Emitter<boolean>());
@@ -49,6 +52,8 @@ export class ErdosAiViewPane extends ViewPane implements IReactComponentContaine
 	private _erdosAiRef = React.createRef<ErdosAiRef>();
 
 	private _conversationTitle: string | undefined;
+
+	private hasResolvedInitialSettingsDisplay = false;
 
 	readonly onSizeChanged: Event<ISize> = this._onSizeChangedEmitter.event;
 
@@ -96,7 +101,8 @@ export class ErdosAiViewPane extends ViewPane implements IReactComponentContaine
 		@ITextModelService private readonly textModelService: ITextModelService,
 		@IErdosAiMarkdownRenderer private readonly markdownRenderer: IErdosAiMarkdownRenderer,
 		@ICommonUtils private readonly commonUtils: ICommonUtils,
-		@IErdosAiSettingsService private readonly erdosAiSettingsService: IErdosAiSettingsService
+		@IErdosAiSettingsService private readonly erdosAiSettingsService: IErdosAiSettingsService,
+		@IStorageService private readonly storageService: IStorageService
 	) {
 		super(
 			options,
@@ -137,6 +143,8 @@ export class ErdosAiViewPane extends ViewPane implements IReactComponentContaine
 	protected override renderBody(container: HTMLElement): void {
 		super.renderBody(container);
 
+		const shouldAutoOpenSettings = this.resolveInitialSettingsDisplay();
+
 		this._erdosReactRenderer = createRoot(container);
 		this._register({ dispose: () => this._erdosReactRenderer?.unmount() });
 
@@ -155,8 +163,25 @@ export class ErdosAiViewPane extends ViewPane implements IReactComponentContaine
 				markdownRenderer={this.markdownRenderer}
 				commonUtils={this.commonUtils}
 				erdosAiSettingsService={this.erdosAiSettingsService}
+				initiallyShowSettings={shouldAutoOpenSettings}
 			/>
 		);
+	}
+
+	private resolveInitialSettingsDisplay(): boolean {
+		if (this.hasResolvedInitialSettingsDisplay) {
+			return false;
+		}
+
+		this.hasResolvedInitialSettingsDisplay = true;
+
+		const hasAutoOpened = this.storageService.getBoolean(ErdosAiViewPane.SETTINGS_AUTO_OPEN_STORAGE_KEY, StorageScope.PROFILE, false);
+		if (!hasAutoOpened) {
+			this.storageService.store(ErdosAiViewPane.SETTINGS_AUTO_OPEN_STORAGE_KEY, true, StorageScope.PROFILE, StorageTarget.USER);
+			return true;
+		}
+
+		return false;
 	}
 
 	protected override layoutBody(height: number, width: number): void {

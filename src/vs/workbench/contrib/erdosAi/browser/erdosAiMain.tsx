@@ -52,6 +52,7 @@ export interface ErdosAiProps {
 	readonly markdownRenderer: IErdosAiMarkdownRenderer;
 	readonly commonUtils: ICommonUtils;
 	readonly erdosAiSettingsService: IErdosAiSettingsService;
+	readonly initiallyShowSettings?: boolean;
 }
 
 export interface ErdosAiRef {
@@ -80,7 +81,7 @@ export const ErdosAi = React.forwardRef<ErdosAiRef, ErdosAiProps>((props, ref) =
 	}, [services.instantiationService, services.modelService, services.languageService]);
 
 	const [showHistory, setShowHistory] = useState(false);
-	const [showSettings, setShowSettings] = useState(false);
+	const [showSettings, setShowSettings] = useState(!!props.initiallyShowSettings);
 	const [streamingErrors, setStreamingErrors] = useState<Map<string, string>>(new Map());
 
 	const [widgets, setWidgets] = useState<Map<number, {info: IErdosAiWidgetInfo, content: string, diffData?: any}>>(new Map());
@@ -108,6 +109,12 @@ export const ErdosAi = React.forwardRef<ErdosAiRef, ErdosAiProps>((props, ref) =
 		showHistory: () => setShowHistory(true),
 		showSettings: () => setShowSettings(true)
 	}));
+
+	useEffect(() => {
+		if (props.initiallyShowSettings) {
+			setShowSettings(true);
+		}
+	}, [props.initiallyShowSettings]);
 
 	// Message editing hook
 	const {
