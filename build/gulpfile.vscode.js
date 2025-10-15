@@ -238,6 +238,31 @@ function copyDirectoryRecursiveSync(source, destination) {
 	}
 }
 
+function copyNodeModuleEntry(sourcePath, targetPath) {
+	fs.rmSync(targetPath, { recursive: true, force: true });
+
+	const stats = fs.lstatSync(sourcePath);
+	if (stats.isSymbolicLink()) {
+		const resolvedSource = fs.realpathSync(sourcePath);
+		const resolvedStats = fs.statSync(resolvedSource);
+		if (resolvedStats.isDirectory()) {
+			copyDirectoryRecursiveSync(resolvedSource, targetPath);
+		} else {
+			fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+			fs.copyFileSync(resolvedSource, targetPath);
+		}
+		return;
+	}
+
+	if (stats.isDirectory()) {
+		copyDirectoryRecursiveSync(sourcePath, targetPath);
+		return;
+	}
+
+	fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+	fs.copyFileSync(sourcePath, targetPath);
+}
+
 function packageTask(platform, arch, sourceFolderName, destinationFolderName, opts) {
 	opts = opts || {};
 
@@ -375,6 +400,23 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 		const quartoNodeModules = path.join(quartoExtensionBuildRoot, 'node_modules');
 		fs.mkdirSync(quartoNodeModules, { recursive: true });
 		
+		// Copy the extension's node_modules (excluding vscode-uri which is replaced below)
+		const quartoExtensionNodeModules = path.join(root, 'extensions', 'quarto', 'node_modules');
+		if (fs.existsSync(quartoExtensionNodeModules)) {
+			console.log('[quarto] Copying extension node_modules for runtime');
+			const extensionModules = fs.readdirSync(quartoExtensionNodeModules);
+			for (const entry of extensionModules) {
+				if (entry === 'vscode-uri') {
+					continue;
+				}
+				const sourcePath = path.join(quartoExtensionNodeModules, entry);
+				const targetPath = path.join(quartoNodeModules, entry);
+				copyNodeModuleEntry(sourcePath, targetPath);
+			}
+		} else {
+			console.warn('[quarto] Warning: extension node_modules not found. Run \"npm install\" in extensions/quarto before packaging.');
+		}
+
 		// Copy vscode-uri for the main extension
 		const erdosUriSource = path.join(root, 'node_modules', 'erdos-uri');
 		if (!fs.existsSync(erdosUriSource)) {
@@ -384,19 +426,39 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 		fs.rmSync(vscodeUriTarget, { recursive: true, force: true });
 		copyDirectoryRecursiveSync(erdosUriSource, vscodeUriTarget);
 
+		// Copy additional runtime dependencies required by the extension at runtime
+		const quartoRuntimeDeps = [
+			'mathjax-full',
+			'esm',
+			'mhchemparser',
+			'mj-context-menu',
+			'speech-rule-engine',
+		];
+		for (const dep of quartoRuntimeDeps) {
+			const depSource = path.join(root, 'extensions', 'quarto', 'node_modules', dep);
+			if (!fs.existsSync(depSource)) {
+				console.warn(`[quarto] Warning: runtime dependency "${dep}" not found at ${depSource}.`);
+				continue;
+			}
+			const depTarget = path.join(quartoNodeModules, dep);
+			fs.rmSync(depTarget, { recursive: true, force: true });
+			copyDirectoryRecursiveSync(depSource, depTarget);
+		}
+
 		// Copy the entire LSP node_modules directory since the LSP uses unbundled TypeScript output
 		const quartoLspNodeModules = path.join(root, 'extensions', 'quarto', 'lsp', 'node_modules');
 		if (fs.existsSync(quartoLspNodeModules)) {
 			console.log('[quarto] Copying LSP node_modules for language server runtime');
 			const lspNodeModulesFiles = fs.readdirSync(quartoLspNodeModules);
 			for (const file of lspNodeModulesFiles) {
+				if (file === 'vscode-uri') {
+					continue;
+				}
+
 				const sourcePath = path.join(quartoLspNodeModules, file);
 				const targetPath = path.join(quartoNodeModules, file);
-				// Skip vscode-uri since we already copied erdos-uri there
-				if (file !== 'vscode-uri') {
-					fs.rmSync(targetPath, { recursive: true, force: true });
-					copyDirectoryRecursiveSync(sourcePath, targetPath);
-				}
+
+				copyNodeModuleEntry(sourcePath, targetPath);
 			}
 		} else {
 			console.warn('[quarto] Warning: LSP node_modules not found. Run "npm install" in extensions/quarto/lsp before packaging.');

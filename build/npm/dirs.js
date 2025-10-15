@@ -43,6 +43,7 @@ const dirs = [
 	'extensions/microsoft-authentication',
 	'extensions/notebook-renderers',
 	'extensions/quarto',
+	'extensions/quarto/lsp',
 	'extensions/npm',
 	'extensions/php-language-features',
 	'extensions/references-view',
