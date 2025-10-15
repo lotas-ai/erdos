@@ -371,15 +371,36 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 			}
 		}
 
+		// Copy node_modules for the extension and LSP
 		const quartoNodeModules = path.join(quartoExtensionBuildRoot, 'node_modules');
+		fs.mkdirSync(quartoNodeModules, { recursive: true });
+		
+		// Copy vscode-uri for the main extension
 		const erdosUriSource = path.join(root, 'node_modules', 'erdos-uri');
 		if (!fs.existsSync(erdosUriSource)) {
 			throw new Error('Missing erdos-uri module required for Quarto packaging. Run "npm install" before packaging.');
 		}
 		const vscodeUriTarget = path.join(quartoNodeModules, 'vscode-uri');
-		fs.mkdirSync(quartoNodeModules, { recursive: true });
 		fs.rmSync(vscodeUriTarget, { recursive: true, force: true });
 		copyDirectoryRecursiveSync(erdosUriSource, vscodeUriTarget);
+
+		// Copy the entire LSP node_modules directory since the LSP uses unbundled TypeScript output
+		const quartoLspNodeModules = path.join(root, 'extensions', 'quarto', 'lsp', 'node_modules');
+		if (fs.existsSync(quartoLspNodeModules)) {
+			console.log('[quarto] Copying LSP node_modules for language server runtime');
+			const lspNodeModulesFiles = fs.readdirSync(quartoLspNodeModules);
+			for (const file of lspNodeModulesFiles) {
+				const sourcePath = path.join(quartoLspNodeModules, file);
+				const targetPath = path.join(quartoNodeModules, file);
+				// Skip vscode-uri since we already copied erdos-uri there
+				if (file !== 'vscode-uri') {
+					fs.rmSync(targetPath, { recursive: true, force: true });
+					copyDirectoryRecursiveSync(sourcePath, targetPath);
+				}
+			}
+		} else {
+			console.warn('[quarto] Warning: LSP node_modules not found. Run "npm install" in extensions/quarto/lsp before packaging.');
+		}
 
 		// Bundle standalone Quarto CLI (downloaded for current platform)
 		const quartoStandalonePath = path.join(root, 'quarto');
