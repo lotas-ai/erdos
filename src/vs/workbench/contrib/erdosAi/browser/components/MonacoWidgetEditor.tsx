@@ -37,7 +37,7 @@ export interface MonacoWidgetEditorProps {
 	content: string;
 	filename?: string;
 	functionType: 'search_replace' | 'run_console_cmd' | 'run_terminal_cmd' | 'delete_file' | 'run_file';
-	language?: 'python' | 'r';
+	language?: 'python' | 'r' | 'markdown';
 	isReadOnly?: boolean;
 	monacoServices: IMonacoWidgetServices;
 	configurationService: IConfigurationService;

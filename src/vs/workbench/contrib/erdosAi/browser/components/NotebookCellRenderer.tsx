@@ -9,8 +9,6 @@ import { MonacoWidgetEditor } from './MonacoWidgetEditor.js';
 import { IMonacoWidgetServices } from '../widgets/widgetTypes.js';
 import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
 import { ICommonUtils } from '../../../../services/erdosAiUtils/common/commonUtils.js';
-import { renderMarkdown } from '../../../../../base/browser/markdownRenderer.js';
-import { DisposableStore } from '../../../../../base/common/lifecycle.js';
 
 interface CellWithDiffLines extends CellNode {
 	diffLines?: Array<{
@@ -105,7 +103,21 @@ export const NotebookCellRenderer: React.FC<NotebookCellRendererProps> = ({
 								<div className="cell-focus-indicator cell-focus-indicator-top"></div>
 								<div className="cell-focus-indicator cell-focus-indicator-side cell-focus-indicator-left"></div>
 								<div className="cell markdown" style={{ width: '100%' }}>
-									<VSCodeMarkdownRenderer content={cellContent} />
+									<div className="cell-editor-part" style={{ width: '100%' }}>
+										<div className="cell-editor-container" style={{ width: '100%' }}>
+											<MonacoWidgetEditor 
+												content={cellContent}
+												language="markdown"
+												isReadOnly={isReadOnly}
+												functionType={functionType}
+												filename={filename}
+												monacoServices={monacoServices}
+												configurationService={configurationService}
+												commonUtils={commonUtils}
+												diffLines={cell.diffLines}
+											/>
+										</div>
+									</div>
 								</div>
 								<div className="cell-focus-indicator cell-focus-indicator-side cell-focus-indicator-right"></div>
 								<div className="cell-focus-indicator cell-focus-indicator-bottom"></div>
@@ -131,40 +143,4 @@ export const NotebookCellRenderer: React.FC<NotebookCellRendererProps> = ({
 			})}
 		</div>
 	);
-};
-
-// Use VS Code's actual markdown renderer
-const VSCodeMarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
-	const containerRef = React.useRef<HTMLDivElement>(null);
-	const disposablesRef = React.useRef<DisposableStore | null>(null);
-
-	React.useEffect(() => {
-		if (!disposablesRef.current) {
-			disposablesRef.current = new DisposableStore();
-		}
-
-		if (containerRef.current && content) {
-			const disposables = disposablesRef.current;
-			disposables.clear();
-
-			// Use VS Code's renderMarkdown function
-			const rendered = disposables.add(renderMarkdown({ 
-				value: content, 
-				supportThemeIcons: true,
-				supportHtml: true
-			}));
-
-			// Clear container and append rendered element
-			containerRef.current.replaceChildren(rendered.element);
-		}
-
-		return () => {
-			if (disposablesRef.current) {
-				disposablesRef.current.dispose();
-				disposablesRef.current = null;
-			}
-		};
-	}, [content]);
-
-	return <div ref={containerRef} className="notebook-markdown-content" />;
 };
