@@ -13,6 +13,7 @@ interface ChunkState {
 	lastOutputLength: number;                // Track how much output has been appended
 	range: vscode.Range;                     // The cell range for this chunk
 	viewZoneHandle?: number;                 // Handle for updating position in main thread
+	shouldDeleteOnDispose: boolean;          // Whether disposal should trigger chunk deletion
 }
 
 // Per-document state that persists across editor switches
@@ -114,6 +115,11 @@ export class QuartoInlineOutputManager extends Disposable {
             return;
         }
 
+        // Set all chunks to not delete on dispose before saving (tab switch is programmatic)
+        for (const state of this.chunkStates_.values()) {
+            state.shouldDeleteOnDispose = false;
+        }
+
         this.documentStates_.set(this.currentDocumentUri_, {
             chunkStates: new Map(this.chunkStates_),
             executionToChunkId: new Map(this.executionToChunkId_),
@@ -124,6 +130,10 @@ export class QuartoInlineOutputManager extends Disposable {
 
     // Clear current state without saving
     private clearCurrentState(): void {
+        // Set all chunks to not delete on dispose before clearing (programmatic disposal)
+        for (const state of this.chunkStates_.values()) {
+            state.shouldDeleteOnDispose = false;
+        }
         this.disposeAllChunks();
         this.chunkStates_.clear();
         this.executionToChunkId_.clear();
@@ -147,6 +157,13 @@ export class QuartoInlineOutputManager extends Disposable {
         this.executionToChunkId_ = new Map(savedState.executionToChunkId);
         this.cellOutputs_ = new Map(savedState.cellOutputs);
         this.decorationToChunkId_ = new Map(savedState.decorationToChunkId);
+
+        // CRITICAL FIX: Reset shouldDeleteOnDispose to true for all restored chunks
+        // They were set to false during save to prevent deletion during tab switch,
+        // but now that they're restored, users should be able to close them
+        for (const state of this.chunkStates_.values()) {
+            state.shouldDeleteOnDispose = true;
+        }
 
         for (const [chunkId, state] of this.chunkStates_) {
             editor.setDecorations(state.decoration, [{ range: state.range }]);
@@ -174,6 +191,33 @@ export class QuartoInlineOutputManager extends Disposable {
         return null;
     }
 
+    // Clear output for a chunk when re-running
+    private clearChunkOutput(chunkId: string): void {
+        const state = this.chunkStates_.get(chunkId);
+        if (!state) {
+            return;
+        }
+
+        // Dispose the viewZone if it exists (programmatic disposal - don't trigger deletion)
+        if (state.viewZone) {
+            state.shouldDeleteOnDispose = false;
+            state.viewZone.dispose();
+            state.viewZone = null;
+        }
+
+        // Clear old executionId mappings and outputs for this chunk
+        for (const [execId, mappedChunkId] of this.executionToChunkId_.entries()) {
+            if (mappedChunkId === chunkId) {
+                this.executionToChunkId_.delete(execId);
+                this.cellOutputs_.delete(execId);
+            }
+        }
+
+        // Reset output tracking and re-enable deletion for the next viewZone
+        state.lastOutputLength = 0;
+        state.shouldDeleteOnDispose = true; // Next viewZone can be user-closed
+    }
+
     // Track cell execution (matches Rao's chunk execution setup)
     public async trackCellExecution(executionId: string, cellRange: vscode.Range): Promise<void> {
         if (!this.activeEditor_) {
@@ -183,18 +227,17 @@ export class QuartoInlineOutputManager extends Disposable {
         let chunkId = await this.getChunkIdAtRange(cellRange);
 
         if (chunkId) {
-            let state = this.chunkStates_.get(chunkId);
-            if (state) {
-                if (state.viewZone) {
-                    state.viewZone.dispose();
-                }
-                state.viewZone = null;
-                state.currentExecutionId = executionId;
-                state.lastOutputLength = 0;
-                state.range = cellRange;
-            } else {
+            const state = this.chunkStates_.get(chunkId);
+            if (!state) {
                 return;
             }
+
+            // Clear old output completely before setting up new execution
+            this.clearChunkOutput(chunkId);
+            
+            // Update state for new execution
+            state.currentExecutionId = executionId;
+            state.range = cellRange;
         } else {
             chunkId = this.generateChunkId();
             
@@ -211,11 +254,13 @@ export class QuartoInlineOutputManager extends Disposable {
                 viewZone: null,
                 decoration: decorationType,
                 lastOutputLength: 0,
-                range: cellRange
+                range: cellRange,
+                shouldDeleteOnDispose: true // Allow user to close this chunk
             };
             this.chunkStates_.set(chunkId, state);
         }
 
+        // Set up new execution mapping and output buffer
         this.executionToChunkId_.set(executionId, chunkId);
         this.cellOutputs_.set(executionId, []);
     }
@@ -227,6 +272,7 @@ export class QuartoInlineOutputManager extends Disposable {
     public handleRuntimeOutput(output: any): void {
         const executionId = output.parent_id;
         const chunkId = this.executionToChunkId_.get(executionId);
+        
         if (!chunkId || !this.chunkStates_.get(chunkId) || !this.activeEditor_) {
             return;
         }
@@ -321,13 +367,15 @@ export class QuartoInlineOutputManager extends Disposable {
                     const state = this.chunkStates_.get(chunkId);
                     if (state) {
                         state.viewZone = null;
+                        
+                        // Only schedule deletion if this was a user action (shouldDeleteOnDispose = true)
+                        // Programmatic disposals (re-run, tab switch) set shouldDeleteOnDispose = false
+                        if (state.shouldDeleteOnDispose) {
+                            setTimeout(() => {
+                                this.deleteChunk(chunkId);
+                            }, 0);
+                        }
                     }
-                    
-                    // Schedule deletion on next tick
-                    // If file switch happens, saveCurrentDocumentState will save before deletion runs
-                    setTimeout(() => {
-                        this.deleteChunk(chunkId);
-                    }, 0);
                 });
             } else {
                 controller.dispose();
@@ -449,22 +497,11 @@ export class QuartoInlineOutputManager extends Disposable {
         this.decorationToChunkId_.clear();
     }
 
-    public clearExecutionOutput(executionId: string): void {
-        const chunkId = this.executionToChunkId_.get(executionId);
-        if (!chunkId) {
-            return;
-        }
-
-        const state = this.chunkStates_.get(chunkId);
-        if (state?.viewZone) {
-            state.viewZone.dispose();
-            state.viewZone = null;
-            this.cellOutputs_.delete(executionId);
-            this.executionToChunkId_.delete(executionId);
-        }
-    }
-
     public clearAllOutputs(): void {
+        // Set all to programmatic disposal before clearing
+        for (const state of this.chunkStates_.values()) {
+            state.shouldDeleteOnDispose = false;
+        }
         this.disposeAllChunks();
     }
 }

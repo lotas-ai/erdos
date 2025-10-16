@@ -3318,7 +3318,26 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 			}
 		}
 		
-		// After removing deleted lines, clean up cells that BECAME empty (had content before, empty now)
+		// Step 2: Add added lines to accepted content
+		// Note: "added-only" sections for new cells are handled by the special case above and return early
+		// This step handles added lines in existing cells (modifications to existing cells)
+		if (storedInfo.addedLines && storedInfo.addedLines.length > 0) {
+			for (const addedLine of storedInfo.addedLines) {
+				
+				const cell = acceptedNotebook.cells[addedLine.acceptedCellNumber];
+				if (cell && Array.isArray(cell.source)) {
+					
+					// Insert line into cell source (1-based to 0-based)
+					const lineIndex = addedLine.acceptedCellLineNumber - 1;
+					const insertIndex = Math.max(0, Math.min(lineIndex, cell.source.length));
+					cell.source.splice(insertIndex, 0, addedLine.content);
+				} else {
+					this.logService.error(`Cell ${addedLine.acceptedCellNumber} not found or has no source array`);
+				}
+			}
+		}
+		
+		// AFTER both removing deleted lines and adding new lines, clean up cells that are STILL empty
 		// Keep: newly created cells (intentionally empty) AND cells that were already empty in baseline
 		const cellsToDeleteFromEditor: number[] = [];
 		acceptedNotebook.cells = acceptedNotebook.cells.filter((cell: any, index: number) => {
@@ -3350,25 +3369,6 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 					count: 1,
 					cells: []
 				}], true, undefined, () => undefined, undefined, true);
-			}
-		}
-		
-		// Step 2: Add added lines to accepted content
-		// Note: "added-only" sections for new cells are handled by the special case above and return early
-		// This step handles added lines in existing cells (modifications to existing cells)
-		if (storedInfo.addedLines && storedInfo.addedLines.length > 0) {
-			for (const addedLine of storedInfo.addedLines) {
-				
-				const cell = acceptedNotebook.cells[addedLine.acceptedCellNumber];
-				if (cell && Array.isArray(cell.source)) {
-					
-					// Insert line into cell source (1-based to 0-based)
-					const lineIndex = addedLine.acceptedCellLineNumber - 1;
-					const insertIndex = Math.max(0, Math.min(lineIndex, cell.source.length));
-					cell.source.splice(insertIndex, 0, addedLine.content);
-				} else {
-					this.logService.error(`Cell ${addedLine.acceptedCellNumber} not found or has no source array`);
-				}
 			}
 		}
 				
