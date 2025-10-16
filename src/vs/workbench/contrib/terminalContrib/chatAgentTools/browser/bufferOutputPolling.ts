@@ -169,7 +169,8 @@ export async function pollForOutputAndIdle(
 					if (problemArray.length) {
 						for (const p of problemArray) {
 							resources.push({ uri: p.resource, range: new Range(p.startLineNumber ?? 1, p.startColumn ?? 1, p.endLineNumber ?? (p.startLineNumber ?? 1), p.endColumn ?? (p.startColumn ?? 1)) });
-							const label = p.resource ? p.resource.path.split('/').pop() ?? p.resource.toString() : '';
+							// Handle both forward and backward slashes for cross-platform compatibility
+							const label = p.resource ? p.resource.path.split(/[/\\]/).pop() ?? p.resource.toString() : '';
 							problemList.push(`Problem: ${p.message} in ${label}`);
 						}
 					}

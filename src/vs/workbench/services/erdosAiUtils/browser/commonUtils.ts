@@ -495,15 +495,20 @@ export class CommonUtils extends Disposable implements ICommonUtils {
         
         const expandedPath = this.expandPath(path, workspaceRoot);
         
-        if (expandedPath.startsWith('/') || /^[a-zA-Z]:/.test(expandedPath)) {
-            return expandedPath;
+        // Normalize all backslashes to forward slashes for consistent path handling across platforms
+        let normalizedPath = expandedPath.replace(/\\/g, '/');
+        
+        if (normalizedPath.startsWith('/') || /^[a-zA-Z]:/.test(normalizedPath)) {
+            return normalizedPath;
         }
         
-        if (workspaceRoot && !expandedPath.startsWith('/') && !expandedPath.match(/^[a-zA-Z]:/)) {
-            return `${workspaceRoot}/${expandedPath}`.replace(/\/+/g, '/');
+        if (workspaceRoot && !normalizedPath.startsWith('/') && !normalizedPath.match(/^[a-zA-Z]:/)) {
+            // Normalize workspace root as well
+            const normalizedRoot = workspaceRoot.replace(/\\/g, '/');
+            return `${normalizedRoot}/${normalizedPath}`.replace(/\/+/g, '/');
         }
         
-        return expandedPath;
+        return normalizedPath;
     }
 
     formatFileSize(sizeInBytes: number): string {

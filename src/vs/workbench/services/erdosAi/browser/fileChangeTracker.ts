@@ -1683,9 +1683,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 			return false;
 		}
 		
-		const filePath = fileUri.fsPath;
-		
+		// Normalize file path to match how it's stored (forward slashes on all platforms)
 		const workspace = this.workspaceContextService.getWorkspace();
+		const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+		const filePath = this.commonUtils.resolvePath(fileUri.fsPath, workspaceRoot);
+		
 		const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 		const workspaceId = workspace.id;
 		
@@ -1714,7 +1716,6 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 		// Convert notebook cell URIs to file URIs FIRST - safety net for all callers
 		const targetUri = this.convertCellUriToFileUri(uri);
 		const uriString = targetUri.toString();
-		const filePath = targetUri.fsPath;
 		
 		// Check if this is a notebook file
 		const isNotebook = this.commonUtils.getFileExtension(targetUri.fsPath).toLowerCase() === 'ipynb';
@@ -1734,6 +1735,10 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 		this.clearAutoAcceptZones(uriString);
 		
 		const workspace = this.workspaceContextService.getWorkspace();
+		const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+		// Normalize file path to match how it's stored (forward slashes on all platforms)
+		const filePath = this.commonUtils.resolvePath(targetUri.fsPath, workspaceRoot);
+		
 		const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 		const workspaceId = workspace.id;
 		
@@ -2066,9 +2071,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 	}
 
 	async acceptAllAutoAcceptChanges(uri: URI): Promise<void> {
-		const filePath = uri.fsPath;
-		
 		const workspace = this.workspaceContextService.getWorkspace();
+		const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+		// Normalize file path to match how it's stored (forward slashes on all platforms)
+		const filePath = this.commonUtils.resolvePath(uri.fsPath, workspaceRoot);
+		
 		const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 		const workspaceId = workspace.id;
 		
@@ -2148,9 +2155,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 	}
 
 	async rejectAllAutoAcceptChanges(uri: URI): Promise<void> {
-		const filePath = uri.fsPath;
-		
 		const workspace = this.workspaceContextService.getWorkspace();
+		const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+		// Normalize file path to match how it's stored (forward slashes on all platforms)
+		const filePath = this.commonUtils.resolvePath(uri.fsPath, workspaceRoot);
+		
 		const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 		const workspaceId = workspace.id;
 		
@@ -2416,8 +2425,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 		model: any;
 	} | { fileTracking: null; fileTrackingPath: null; diffEntries: null; model: null; }> {
 		try {
-			const filePath = uri.fsPath;
 			const workspace = this.workspaceContextService.getWorkspace();
+			const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+			// Normalize file path to match how it's stored (forward slashes on all platforms)
+			const filePath = this.commonUtils.resolvePath(uri.fsPath, workspaceRoot);
+			
 			const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 			const workspaceId = workspace.id;
 			
@@ -2512,8 +2524,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 	}
 
 	private async cleanupFileIfNoDiffs(uri: URI): Promise<void> {
-		const filePath = uri.fsPath;
 		const workspace = this.workspaceContextService.getWorkspace();
+		const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+		// Normalize file path to match how it's stored (forward slashes on all platforms)
+		const filePath = this.commonUtils.resolvePath(uri.fsPath, workspaceRoot);
+		
 		const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 		const workspaceId = workspace.id;
 		
@@ -2738,7 +2753,8 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 					
 					// Only include files that have actual changes
 					if (addedLines > 0 || deletedLines > 0) {
-						const fileName = uri.path.split('/').pop() || uri.path;
+						// Handle both forward and backward slashes for cross-platform compatibility
+						const fileName = uri.path.split(/[/\\]/).pop() || uri.path;
 						
 						trackedFiles.push({
 							filePath,
@@ -2842,8 +2858,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 		// Set notebook operation guard to prevent interference from regular diff highlighting
 		this.startNotebookOperation(uri.toString());
 		
-		const filePath = uri.fsPath;		
 		const workspace = this.workspaceContextService.getWorkspace();
+		const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+		// Normalize file path to match how it's stored (forward slashes on all platforms)
+		const filePath = this.commonUtils.resolvePath(uri.fsPath, workspaceRoot);
+		
 		const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 		const workspaceId = workspace.id;
 		
@@ -3196,8 +3215,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 		let fileTrackingPath: URI;
 		
 		try {
-			const filePath = uri.fsPath;
 			const workspace = this.workspaceContextService.getWorkspace();
+			const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+			// Normalize file path to match how it's stored (forward slashes on all platforms)
+			const filePath = this.commonUtils.resolvePath(uri.fsPath, workspaceRoot);
+			
 			const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 			const workspaceId = workspace.id;
 			
@@ -3414,8 +3436,11 @@ export class FileChangeTracker extends Disposable implements IFileChangeTracker 
 		let notebookFileTrackingPath: URI;
 		
 		try {
-			const filePath = uri.fsPath;
 			const workspace = this.workspaceContextService.getWorkspace();
+			const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
+			// Normalize file path to match how it's stored (forward slashes on all platforms)
+			const filePath = this.commonUtils.resolvePath(uri.fsPath, workspaceRoot);
+			
 			const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 			const workspaceId = workspace.id;
 			

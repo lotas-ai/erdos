@@ -106,7 +106,8 @@ class DatabaseTreeRenderer implements ITreeRenderer<IDatabaseTreeElement, FuzzyS
 		if (node.iconPath && (node.iconPath.includes('/') || node.iconPath.includes('\\'))) {
 			templateData.icon.className = 'custom-view-tree-node-item-icon';
 			// Convert extension resource path to browser URI
-			const iconFileName = node.iconPath.split('/').pop() || node.iconPath.split('\\').pop();
+			// Handle both forward and backward slashes for cross-platform compatibility
+			const iconFileName = node.iconPath.split(/[/\\]/).pop();
 			const iconUrl = this.getIconDataUri(iconFileName!);
 			templateData.icon.style.backgroundImage = `url('${iconUrl}')`;
 			templateData.icon.style.backgroundSize = '16px 16px';

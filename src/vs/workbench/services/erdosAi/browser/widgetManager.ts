@@ -513,8 +513,9 @@ export class WidgetManager extends Disposable implements IWidgetManager {
 			}
 			
 			// Get clean filename
+			// Handle both forward and backward slashes for cross-platform compatibility
 			const filePath = storedDiffEntry.file_path || 'unknown';
-			const cleanFilename = filePath.split('/').pop() || filePath;
+			const cleanFilename = filePath.split(/[/\\]/).pop() || filePath;
 			
 			// Reconstruct content from filtered diff for widget display
 			let filteredContent = '';

@@ -723,9 +723,9 @@ export function toLSTextDocument(doc: vscode.TextDocument): LSTextDocument {
 }
 
 export function getPathBaseName(path: string): string {
-	const pathAfterSlashSplit = path.split('/').pop();
-	const pathAfterBackslashSplit = pathAfterSlashSplit ? pathAfterSlashSplit.split('\\').pop() : '';
-	return pathAfterBackslashSplit ?? '';
+	// Handle both forward and backward slashes for cross-platform compatibility
+	const basename = path.split(/[/\\]/).pop();
+	return basename ?? '';
 }
 
 export function getSyntaxes() {

@@ -107,8 +107,14 @@ class FileGroupRenderer implements ITreeRenderer<{ element: PlotHistoryTreeEleme
 
 	renderElement(element: ITreeNode<{ element: PlotHistoryTreeElement }, FuzzyScore>, index: number, templateData: IFileGroupTemplateData): void {
 		const fileGroup = element.element.element as FileGroup;
-		// Display "Console" for internal console grouping keys
-		const displayLabel = fileGroup.source.startsWith('__console_') ? 'Console' : fileGroup.source;
+		// Display "Console" for internal console grouping keys, or just the basename for file paths
+		let displayLabel: string;
+		if (fileGroup.source.startsWith('__console_')) {
+			displayLabel = 'Console';
+		} else {
+			// Handle both forward and backward slashes for cross-platform compatibility
+			displayLabel = fileGroup.source.split(/[/\\]/).pop() || fileGroup.source;
+		}
 		templateData.label.textContent = displayLabel;
 				
 		// Get the language from the first plot in the first group
@@ -282,8 +288,9 @@ class PlotListRenderer implements ITreeRenderer<{ element: PlotHistoryTreeElemen
 			}
 
 			// Create tooltip: "filename.py - Plot 1 - 2:30 PM" or "Console - Plot 1 - 2:30 PM"
+			// Handle both forward and backward slashes for cross-platform compatibility
 			const sourceName = plot.metadata.source_file 
-				? plot.metadata.source_file.split('/').pop() || 'Unknown'
+				? plot.metadata.source_file.split(/[/\\]/).pop() || 'Unknown'
 				: plot.metadata.source_type || 'Console';
 			const plotIndex = idx + 1;
 			const timeStr = new Date(plot.metadata.created).toLocaleTimeString(undefined, { 
@@ -433,7 +440,14 @@ class PlotHistoryAccessibilityProvider implements IListAccessibilityProvider<{ e
 	getAriaLabel(element: { element: PlotHistoryTreeElement }): string {
 		if ('groups' in element.element) {
 			const fileGroup = element.element as FileGroup;
-			const displayLabel = fileGroup.source.startsWith('__console_') ? 'Console' : fileGroup.source;
+			// Display "Console" for internal console grouping keys, or just the basename for file paths
+			let displayLabel: string;
+			if (fileGroup.source.startsWith('__console_')) {
+				displayLabel = 'Console';
+			} else {
+				// Handle both forward and backward slashes for cross-platform compatibility
+				displayLabel = fileGroup.source.split(/[/\\]/).pop() || fileGroup.source;
+			}
 			return localize('plotHistoryFileAriaLabel', '{0}, {1} executions', displayLabel, fileGroup.groups.length);
 		}
 		if ('plotIds' in element.element) {

@@ -18,6 +18,7 @@ import { SnapshotContext } from '../../../services/workingCopy/common/fileWorkin
 import { streamToBuffer } from '../../../../base/common/buffer.js';
 import { ISearchReplaceCommandHandler } from '../common/searchReplaceCommandHandler.js';
 import { INotebookEditorModelResolverService } from '../../../contrib/notebook/common/notebookEditorModelResolverService.js';
+import { IFileResolverService } from '../../erdosAiUtils/common/fileResolverService.js';
 
 export class AutoAcceptHandler implements IAutoAcceptHandler {
 	readonly _serviceBrand: undefined;
@@ -33,7 +34,8 @@ export class AutoAcceptHandler implements IAutoAcceptHandler {
 		@ICommonUtils private readonly commonUtils: ICommonUtils,
 		@INotebookService private readonly notebookService: INotebookService,
 		@ISearchReplaceCommandHandler private readonly searchReplaceCommandHandler: ISearchReplaceCommandHandler,
-		@INotebookEditorModelResolverService private readonly notebookEditorModelResolverService: INotebookEditorModelResolverService
+		@INotebookEditorModelResolverService private readonly notebookEditorModelResolverService: INotebookEditorModelResolverService,
+		@IFileResolverService private readonly fileResolverService: IFileResolverService
 	) {}
 	
 	/**
@@ -103,8 +105,19 @@ export class AutoAcceptHandler implements IAutoAcceptHandler {
 		const workspace = this.workspaceContextService.getWorkspace();
 		const workspaceRoot = workspace.folders.length > 0 ? workspace.folders[0].uri.fsPath : undefined;
 		
-		// Use the proper erdosAiUtils CommonUtils service to resolve the file path
-		const resolvedFilePath = this.commonUtils.resolvePath(filePath, workspaceRoot);
+		// For relative paths with no workspace, we need to resolve to absolute path
+		let resolvedFilePath = this.commonUtils.resolvePath(filePath, workspaceRoot);
+		
+		// If the path is still relative (basename only) and we have no workspace root,
+		// try to resolve it to an absolute path using the file resolver
+		if (!workspaceRoot && !resolvedFilePath.startsWith('/') && !/^[a-zA-Z]:/.test(resolvedFilePath)) {
+			const resolverContext = this.fileResolverService.createResolverContext();
+			const fileResult = await this.commonUtils.resolveFile(filePath, resolverContext);
+			if (fileResult.found && fileResult.uri) {
+				// Use the absolute path from the resolved URI
+				resolvedFilePath = this.commonUtils.resolvePath(fileResult.uri.fsPath, workspaceRoot);
+			}
+		}
 		
 		const isEmptyWindow = !workspace.configuration && workspace.folders.length === 0;
 		const workspaceId = workspace.id;

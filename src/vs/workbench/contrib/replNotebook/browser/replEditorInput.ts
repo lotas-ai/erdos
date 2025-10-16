@@ -70,12 +70,13 @@ export class ReplEditorInput extends NotebookEditorInput implements ICompositeNo
 
 		if (resource.scheme === 'untitled') {
 			const match = new RegExp('Untitled-(\\d+)\.').exec(resource.path);
-			if (match?.length === 2) {
-				return `REPL - ${match[1]}`;
-			}
+		if (match?.length === 2) {
+			return `REPL - ${match[1]}`;
 		}
+	}
 
-		const filename = resource.path.split('/').pop();
+		// Handle both forward and backward slashes for cross-platform compatibility
+		const filename = resource.path.split(/[/\\]/).pop();
 		return filename ? `REPL - ${filename}` : 'REPL';
 	}
 

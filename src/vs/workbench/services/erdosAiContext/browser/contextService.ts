@@ -424,12 +424,13 @@ export class ContextService extends Disposable implements IContextServiceInterfa
 			for (const doc of docs) {
 				const minutesSinceUpdate = await this.getMinutesSinceLastEdit(doc.path);
 				
+				// Handle both forward and backward slashes for cross-platform compatibility
 				const fileInfo = {
 					id: doc.id,
 					path: doc.path,
 					type: doc.metadata?.language || 'text',
 					dirty: !doc.isSaved,
-					name: doc.path.split('/').pop() || doc.id,
+					name: doc.path.split(/[/\\]/).pop() || doc.id,
 					minutes_since_last_update: minutesSinceUpdate,
 					is_active: doc.isActive
 				};

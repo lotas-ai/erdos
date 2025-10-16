@@ -472,11 +472,15 @@ export function checkFileVersion(notebook: any, sourcePath: string, outputsPath:
 
     const jupytextVersionInFile = notebook.metadata?.jupytext?.text_representation?.jupytext_version || "N/A";
 
+    // Handle both forward and backward slashes for cross-platform compatibility
+    const sourceFileName = sourcePath.split(/[/\\]/).pop();
+    const outputFileName = outputsPath.split(/[/\\]/).pop();
+
     throw new JupytextFormatError(
-        `The file ${sourcePath.split('/').pop()} was generated with jupytext version ${jupytextVersionInFile} ` +
+        `The file ${sourceFileName} was generated with jupytext version ${jupytextVersionInFile} ` +
         `but you have ${__version__} installed. Please upgrade jupytext to version ` +
-        `${jupytextVersionInFile}, or remove either ${sourcePath.split('/').pop()} or ${outputsPath.split('/').pop()}. ` +
-        `This error occurs because ${sourcePath.split('/').pop()} is in the ${formatName} format in version ${actualVersion}, ` +
+        `${jupytextVersionInFile}, or remove either ${sourceFileName} or ${outputFileName}. ` +
+        `This error occurs because ${sourceFileName} is in the ${formatName} format in version ${actualVersion}, ` +
         `while jupytext version ${__version__} can only read the ` +
         `${formatName} format in versions ${minVersion} to ${current}.`
     );
