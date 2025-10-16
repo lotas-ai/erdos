@@ -263,7 +263,7 @@ export class TerminalCommandHandler extends Disposable implements ITerminalComma
 								
 								resolve(cleanOutput);
 							} else {
-								const result = `Command executed: ${command}\n\nExit code: ${finishedCommand.exitCode ?? 0} (success)`;
+								const result = `Command executed.\n\nExit code: ${finishedCommand.exitCode ?? 0} (success)`;
 								resolve(result);
 							}
 						}
