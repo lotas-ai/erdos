@@ -163,17 +163,41 @@ export class RuntimeQueryHandler extends Disposable {
 
 	async showHelpTopic(topic: string): Promise<boolean> {
 		const result = await this.sendRequest('show_help_topic', { topic });
-		return result;
+		
+		// Check if the backend returns a nested structure like search_help_topics
+		if (result && typeof result === 'object' && 'result' in result) {
+			return result.result || false;
+		}
+		
+		return result || false;
 	}
 
 	async searchHelpTopics(query: string): Promise<Array<string>> {
-		const result = await this.sendRequest('search_help_topics', { query });
-		return result;
+		try {
+			const result = await this.sendRequest('search_help_topics', { query });
+			
+			// The R backend returns { method: "SearchHelpTopicsReply", result: [...] }
+			// We need to unwrap the nested result
+			if (result && typeof result === 'object' && 'result' in result) {
+				return result.result || [];
+			}
+			
+			return result || [];
+		} catch (error) {
+			console.error(`[RuntimeQueryHandler.searchHelpTopics] Error during search:`, error);
+			throw error;
+		}
 	}
 
 	async parseFunctions(code: string, language: string): Promise<FunctionParseResult> {
 		const result = await this.sendRequest('parse_functions', { code, language });
-		return result;
+		
+		// Check if the backend returns a nested structure like search_help_topics
+		if (result && typeof result === 'object' && 'result' in result) {
+			return result.result || { functions: [], success: false };
+		}
+		
+		return result || { functions: [], success: false };
 	}
 
 	override dispose(): void {

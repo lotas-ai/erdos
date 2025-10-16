@@ -91,6 +91,9 @@ const vscodeResourceIncludes = [
 	'out-build/vs/workbench/contrib/erdosHelp/browser/resources/*.html',
 	'out-build/vs/workbench/services/proxy/resources/*.html',
 
+	// Erdos Database Client
+	'out-build/vs/workbench/contrib/erdosDatabaseClient/media/resources/**/*.{svg,png}',
+
 	// Extensions
 	'out-build/vs/workbench/contrib/extensions/browser/media/{theme-icon.png,language-icon.svg}',
 	'out-build/vs/workbench/services/extensionManagement/common/media/*.{svg,png}',
