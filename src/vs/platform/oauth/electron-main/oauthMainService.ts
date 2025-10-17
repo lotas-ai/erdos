@@ -5,10 +5,19 @@
 
 import { shell } from 'electron';
 import { createServer } from 'http';
+import { existsSync, readFileSync } from 'fs';
+import { dirname, extname, join } from 'path';
+import { fileURLToPath } from 'url';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { Event, Emitter } from '../../../base/common/event.js';
 import { IOAuthMainService, IOAuthResult } from '../common/oauth.js';
 import { ILogService } from '../../log/common/log.js';
+
+// Paths are relative to the compiled Electron main bundle. Replace these files to customize imagery.
+const NODE_DIRNAME = dirname(fileURLToPath(import.meta.url));
+const SUCCESS_PAGE_CHECKMARK_IMAGE_PATH = join(NODE_DIRNAME, 'resources', 'lotas-square.png');
+const ERROR_PAGE_ICON_IMAGE_PATH = join(NODE_DIRNAME, 'resources', 'lotas-square.png');
+const NOTIFICATION_PAGE_FONT_FAMILY = `'Inter', 'Helvetica Neue', 'Segoe UI', Arial, sans-serif`;
 
 export class OAuthMainService extends Disposable implements IOAuthMainService {
 	declare readonly _serviceBrand: undefined;
@@ -113,30 +122,13 @@ export class OAuthMainService extends Disposable implements IOAuthMainService {
 						}, 3000);
 
 						// Return success page
-						const successHtml = `<!DOCTYPE html>
-<html><head>
-<meta charset="UTF-8">
-<title>Authentication Successful</title></head>
-<body style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px;">
-<div style="color: green; font-size: 48px; margin-bottom: 16px;">&#x2713;</div>
-<h2 style="color: #333; margin-bottom: 8px;">Authentication Successful</h2>
-<p style="color: #666;">You can now close this window and return to Erdos.</p>
-<script>setTimeout(function(){ window.close(); }, 3000);</script>
-</body></html>`;
-
+						const successHtml = this.buildSuccessHtml();
 						res.writeHead(200, { 'Content-Type': 'text/html' });
 						res.end(successHtml);
 						return;
 					} else {
 						// Handle error case
-						const errorHtml = `<!DOCTYPE html>
-<html><head><title>Authentication Failed</title></head>
-<body style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px;">
-<div style="color: red; font-size: 48px; margin-bottom: 16px;">✗</div>
-<h2 style="color: #333; margin-bottom: 8px;">Authentication Failed</h2>
-<p style="color: #666;">No API key received. Please try again.</p>
-</body></html>`;
-
+						const errorHtml = this.buildErrorHtml();
 						res.writeHead(400, { 'Content-Type': 'text/html' });
 						res.end(errorHtml);
 						return;
@@ -158,6 +150,136 @@ export class OAuthMainService extends Disposable implements IOAuthMainService {
 				reject(error);
 			});
 		});
+	}
+
+	private buildSuccessHtml(): string {
+		const iconMarkup = this.getInlineImageMarkup(
+			SUCCESS_PAGE_CHECKMARK_IMAGE_PATH,
+			'Authentication successful',
+			'&#10003;',
+			'#1FAA59'
+		);
+
+		return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Signed in to Erdos</title>
+<style>
+	body {
+		font-family: ${NOTIFICATION_PAGE_FONT_FAMILY};
+		text-align: center;
+		margin: 60px 32px;
+		color: #1f2933;
+	}
+	h2 {
+		font-size: 28px;
+		font-weight: 600;
+		margin: 16px 0 8px;
+	}
+	p {
+		color: #6b7280;
+		font-size: 16px;
+		margin: 0;
+	}
+	.icon-wrapper {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 20px;
+	}
+</style>
+</head>
+<body>
+	<div class="icon-wrapper">${iconMarkup}</div>
+	<h2>Signed in to Erdos</h2>
+	<p>You may now close this page.</p>
+	<script>setTimeout(function(){ window.close(); }, 3000);</script>
+</body>
+</html>`;
+	}
+
+	private buildErrorHtml(): string {
+		const iconMarkup = this.getInlineImageMarkup(
+			ERROR_PAGE_ICON_IMAGE_PATH,
+			'Authentication failed',
+			'&#10007;',
+			'#d13438'
+		);
+
+		return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Authentication Failed</title>
+<style>
+	body {
+		font-family: ${NOTIFICATION_PAGE_FONT_FAMILY};
+		text-align: center;
+		margin: 60px 32px;
+		color: #1f2933;
+	}
+	h2 {
+		font-size: 28px;
+		font-weight: 600;
+		margin: 16px 0 8px;
+	}
+	p {
+		color: #6b7280;
+		font-size: 16px;
+		margin: 0;
+	}
+	.icon-wrapper {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 20px;
+	}
+</style>
+</head>
+<body>
+	<div class="icon-wrapper">${iconMarkup}</div>
+	<h2>Authentication Failed</h2>
+	<p>We couldn't retrieve an API key. Close this tab and try again.</p>
+</body>
+</html>`;
+	}
+
+	private getInlineImageMarkup(filePath: string, altText: string, fallbackGlyph: string, fallbackColor: string): string {
+		if (filePath && existsSync(filePath)) {
+			try {
+				const fileBuffer = readFileSync(filePath);
+				const extension = extname(filePath).toLowerCase();
+				let mimeType: string | undefined;
+				switch (extension) {
+					case '.svg':
+						mimeType = 'image/svg+xml';
+						break;
+					case '.png':
+						mimeType = 'image/png';
+						break;
+					case '.jpg':
+					case '.jpeg':
+						mimeType = 'image/jpeg';
+						break;
+					case '.gif':
+						mimeType = 'image/gif';
+						break;
+				}
+
+				if (mimeType) {
+					const base64 = fileBuffer.toString('base64');
+					const dataUrl = `data:${mimeType};base64,${base64}`;
+					return `<img src="${dataUrl}" alt="${altText}" style="height:72px;width:auto;" />`;
+				}
+
+				this.logService.warn(`Unsupported icon format for OAuth notification page: ${extension}. Falling back to glyph.`);
+			} catch (error) {
+				this.logService.warn('Failed to load OAuth notification icon. Falling back to glyph.', error);
+			}
+		}
+
+		return `<div style="color:${fallbackColor};font-size:64px;">${fallbackGlyph}</div>`;
 	}
 
 	   // Detect backend environment for OAuth redirect
