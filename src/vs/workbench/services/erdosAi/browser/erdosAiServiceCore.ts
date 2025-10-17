@@ -321,6 +321,7 @@ export class ErdosAiServiceCore extends Disposable implements IErdosAiServiceCor
 					diffStore.setConversationManager(this.conversationManager);
 					await diffStore.loadDiffsFromFile();
 					
+					this._onConversationCreated.fire(existingConversation);
 					this._onConversationLoaded.fire(existingConversation);
 					
 					return existingConversation;

@@ -5,7 +5,7 @@
 
 import { Event } from '../../../../../base/common/event.js';
 import { Disposable, DisposableStore } from '../../../../../base/common/lifecycle.js';
-import { IErdosPlotsService, IErdosPlotClient, IPlotHistoryGroup } from '../../common/erdosPlotsService.js';
+import { IErdosPlotsService, IErdosPlotClient, IPlotHistoryGroup, ERDOS_PLOTS_VIEW_ID } from '../../common/erdosPlotsService.js';
 import { ILanguageRuntimeService } from '../../../../services/languageRuntime/common/languageRuntimeService.js';
 import { StaticPlotInstance } from '../../common/erdosPlotsService.js';
 import { ISessionManager } from '../../../../services/languageRuntime/common/sessionManager.js';
@@ -21,6 +21,7 @@ import { IErdosNotebookOutputWebviewService } from '../../../erdosOutputWebview/
 import { NOTEBOOK_PLOT_MIRRORING_KEY, QUARTO_PLOT_MIRRORING_KEY } from '../../../notebook/browser/notebookConfig.js';
 import { IConsoleCodeAttribution, ILanguageRuntimeCodeExecutedEvent } from '../../../../services/languageRuntime/common/codeExecution.js';
 import { IConsoleService } from '../../../../services/erdosConsole/common/consoleService.js';
+import { IViewsService } from '../../../../services/views/common/viewsService.js';
 import { PlotInstanceRegistry } from './plotInstanceRegistry.js';
 import { HistoryGroupManager } from './historyGroupManager.js';
 import { ExecutionAttributionTracker } from './executionAttributionTracker.js';
@@ -70,6 +71,7 @@ export class PlotsOrchestrator extends Disposable implements IErdosPlotsService 
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IErdosNotebookOutputWebviewService private readonly _webviewService: IErdosNotebookOutputWebviewService,
 		@IConsoleService private readonly _consoleService: IConsoleService,
+		@IViewsService private readonly _viewsService: IViewsService,
 	) {
 		super();
 		this._attachRuntimeHooks();
@@ -174,6 +176,7 @@ export class PlotsOrchestrator extends Disposable implements IErdosPlotsService 
 	}
 
 	activatePlot(plotId: string): void {
+		void this._viewsService.openView(ERDOS_PLOTS_VIEW_ID, true);
 		this._instanceRegistry.activateClient(plotId);
 	}
 

@@ -1343,6 +1343,11 @@ export const SettingsPanel = (props: SettingsPanelProps) => {
 														<span className="dropdown-chevron codicon codicon-chevron-down"></span>
 													</div>
 												</div>
+												{selectedModel === 'gpt-5-mini' && (
+													<div className="settings-model-warning">
+														Warning: for better performance and accuracy, we recommend using an Anthropic model (e.g. claude-sonnet-4-5-20250929).
+													</div>
+												)}
 											</div>
 										</div>
 										

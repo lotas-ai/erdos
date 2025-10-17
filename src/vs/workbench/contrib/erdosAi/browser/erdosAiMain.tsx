@@ -388,6 +388,11 @@ export const ErdosAi = React.forwardRef<ErdosAiRef, ErdosAiProps>((props, ref) =
 	}, [messages, props.erdosAiService]);
 
 	useEffect(() => {
+		const conversationCreatedDisposable = props.erdosAiService.onConversationCreated(() => {
+			setShowSettings(false);
+			setShowHistory(false);
+		});
+
 		const conversationLoadedDisposable = props.erdosAiService.onConversationLoaded(async (conversation: Conversation) => {
 			// Mark that we're loading a conversation to prevent auto-scroll
 			setIsLoadingConversation(true);
@@ -612,6 +617,7 @@ export const ErdosAi = React.forwardRef<ErdosAiRef, ErdosAiProps>((props, ref) =
 		}
 
 		return () => {
+			conversationCreatedDisposable.dispose();
 			conversationLoadedDisposable.dispose();
 			messageAddedDisposable.dispose();
 			streamingDataDisposable.dispose();

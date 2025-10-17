@@ -196,6 +196,12 @@
 	outline: none;
 }
 
+.erdos-ai-settings-editor .settings-model-warning {
+	margin-top: 6px;
+	color: var(--vscode-errorForeground, #f14c4c);
+	font-size: 12px;
+}
+
 .erdos-ai-settings-editor .api-key-section {
 	margin-top: 12px;
 }
@@ -779,4 +785,3 @@
 	gap: 8px;
 	margin-top: 8px;
 }
-
