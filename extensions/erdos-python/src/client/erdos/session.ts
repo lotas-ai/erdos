@@ -451,11 +451,17 @@ export class RuntimeSession implements erdos.LanguageRuntimeSession, vscode.Disp
 	}
 
 	private async buildKernelConfig(): Promise<any> {
+		const workspaceFolders = vscode.workspace.workspaceFolders;
+		const cwd = workspaceFolders && workspaceFolders.length > 0 
+			? workspaceFolders[0].uri.fsPath 
+			: undefined;
+
 		return {
 			language: 'python',
 			sessionId: this.metadata.sessionId,
 			argv: this._kernelSpec?.argv || [],
 			env: this._kernelSpec?.env || {},
+			cwd: cwd
 		};
 	}
 

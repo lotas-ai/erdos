@@ -212,6 +212,7 @@ import './services/erdosAi/browser/notebookZoneManager.contribution.js';
 import './contrib/erdosHelp/browser/documentationPanel.registration.js';
 import './contrib/erdosDatabaseClient/browser/erdosDatabaseClient.contribution.js';
 import './contrib/erdosEnvironment/browser/erdosEnvironment.contribution.js';
+import './contrib/kernelWorkspaceSync/browser/kernelWorkspaceSync.js';
 // --- End Erdos ---
 
 // Notebook

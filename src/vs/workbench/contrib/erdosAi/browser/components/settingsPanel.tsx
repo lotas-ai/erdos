@@ -830,7 +830,7 @@ export const SettingsPanel = (props: SettingsPanelProps) => {
 												onClick={() => setShowApiKeyInput(!showApiKeyInput)}
 												disabled={isLoading}
 											>
-												Use API key
+												Use Lotas API Key
 											</button>
 										</div>
 
