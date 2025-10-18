@@ -131,6 +131,7 @@ export class NotebookAutoAcceptDiffZoneWidget extends Disposable {
 	private _uri: URI;
 	public lineNumber: number;
 	public cellHandle: number;
+	private readonly _cellIndex: number;
 	
 	public _actualZoneId: string | null = null;
 	public _isVisible = false;
@@ -153,6 +154,7 @@ export class NotebookAutoAcceptDiffZoneWidget extends Disposable {
 		this._diffSectionId = diffSectionId;
 		this._fileChangeTracker = fileChangeTracker;
 		this._uri = uri;
+		this._cellIndex = cellIndex;
 		
 		// Get cell handle from the cell index - FileChangeTracker knows which notebook this is
 		const notebookEditor = this._getNotebookEditor();
@@ -194,6 +196,7 @@ export class NotebookAutoAcceptDiffZoneWidget extends Disposable {
 			this._domNode = domNode;
 		});
 		this._isVisible = true;
+		this._relayoutNotebookCell(editor);
 	}
 
 	/**
@@ -210,6 +213,32 @@ export class NotebookAutoAcceptDiffZoneWidget extends Disposable {
 		this._actualZoneId = null;
 		this._domNode = null;
 		this._isVisible = false;
+		this._relayoutNotebookCell(editor);
+	}
+
+	private _relayoutNotebookCell(editor: ICodeEditor): void {
+		const notebookEditor = this._getNotebookEditor();
+		if (!notebookEditor || this._cellIndex < 0) {
+			return;
+		}
+
+		const cell = notebookEditor.cellAt(this._cellIndex);
+		if (!cell) {
+			return;
+		}
+
+		const domNode = editor.getDomNode();
+		const ownerWindow = domNode ? dom.getWindow(domNode) : dom.getWindow(notebookEditor.getDomNode());
+
+		dom.scheduleAtNextAnimationFrame(ownerWindow, () => {
+			try {
+				(cell as any).editorHeight = editor.getContentHeight();
+			} catch {
+				// Some notebook cell implementations may not expose a writable editorHeight property.
+			}
+
+			void notebookEditor.layoutNotebookCell(cell, cell.layoutInfo.totalHeight);
+		});
 	}
 
 
@@ -782,6 +811,7 @@ export class NotebookDiffHighlightContribution extends Disposable implements INo
 			cellZoneWidgets.delete(lineNumberStr);
 			this._expandedZones.delete(zoneKey);
 			this._updateGlyphMarginArrow(cellIndex, lineNumber, false);
+			this._scheduleCellLayout(cell, editor);
 		} else {
 			// Create new zone widget (ZoneWidget handles positioning automatically)
 			const zoneWidget = new NotebookDeletedContentZoneWidget(
@@ -797,7 +827,23 @@ export class NotebookDiffHighlightContribution extends Disposable implements INo
 			cellZoneWidgets.set(lineNumberStr, zoneWidget);
 			this._expandedZones.add(zoneKey);
 			this._updateGlyphMarginArrow(cellIndex, lineNumber, true);
+			this._scheduleCellLayout(cell, editor);
 		}
+	}
+
+	private _scheduleCellLayout(cell: ICellViewModel, editor: ICodeEditor): void {
+		const editorDomNode = editor.getDomNode();
+		const ownerWindow = editorDomNode ? dom.getWindow(editorDomNode) : dom.getWindow(this._notebookEditor.getDomNode());
+
+		dom.scheduleAtNextAnimationFrame(ownerWindow, () => {
+			try {
+				(cell as any).editorHeight = editor.getContentHeight();
+			} catch {
+				// Some cell types may not expose an editorHeight setter (e.g. pure markdown preview).
+			}
+
+			void this._notebookEditor.layoutNotebookCell(cell, cell.layoutInfo.totalHeight);
+		});
 	}
 
 	/**
