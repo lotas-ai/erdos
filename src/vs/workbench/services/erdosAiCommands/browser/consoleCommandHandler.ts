@@ -293,18 +293,9 @@ super();
 				let outputBuffer = '';
 				let errorBuffer = '';
 				let resultBuffer = '';
-				
-				const timeout = 30000;
-				
 				const disposables: any[] = [];
 				
-				const timeoutHandle = setTimeout(() => {
-					cleanup();
-					resolve(`Error: ${language.toUpperCase()} command timed out after 30 seconds`);
-				}, timeout);
-				
 				const cleanup = () => {
-					clearTimeout(timeoutHandle);
 					disposables.forEach(d => d.dispose());
 				};
 				
